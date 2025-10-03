@@ -40,6 +40,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Make gradlew executable
+        working-directory: android
+        run: chmod +x gradlew
+
       - name: Build Debug APK
         working-directory: android
         run: ./gradlew assembleDebug
