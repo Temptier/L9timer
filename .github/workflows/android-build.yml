@@ -37,6 +37,11 @@ jobs:
           yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
           yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-33" "build-tools;33.0.2" "platform-tools"
 
+      - name: Fix SDK variables
+        run: |
+          echo "Removing ANDROID_SDK_ROOT to avoid conflicts"
+          unset ANDROID_SDK_ROOT
+
       - name: Install dependencies
         run: npm install
 
