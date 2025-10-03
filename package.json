@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "build": "echo \"Nothing to build, static app\"",
     "build:web": "echo \"static web files\""
   },
   "devDependencies": {
