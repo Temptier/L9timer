@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.bosstimers",
+  "appName": "L9BossTimers",
+  "webDir": "web",
+  "bundledWebRuntime": false
+}
