@@ -1,8 +1,8 @@
 name: Build Android APK
 
 on:
-  workflow_dispatch:
-  push:
+  workflow_dispatch:   # manual trigger
+  push:                # auto trigger on main branch
     branches:
       - main
 
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
-      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk # match ANDROID_HOME
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
 
     steps:
       - name: Checkout repository
@@ -31,7 +31,7 @@ jobs:
       - name: Install Android SDK
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip
+          sudo apt-get install -y wget unzip rsync
           wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
           mkdir -p $ANDROID_HOME/cmdline-tools
           unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
@@ -43,11 +43,18 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # 🆕 Copy static frontend into Android assets
       - name: Copy static files into assets
         run: |
           rm -rf android/app/src/main/assets/*
           mkdir -p android/app/src/main/assets
-          cp -r www/* android/app/src/main/assets/
+          rsync -av \
+            --exclude='android' \
+            --exclude='node_modules' \
+            --exclude='.github' \
+            --exclude='.git' \
+            --exclude='.gitignore' \
+            ./ android/app/src/main/assets/
 
       - name: Make gradlew executable
         working-directory: android
