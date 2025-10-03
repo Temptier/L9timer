@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
-      ANDROID_SDK_ROOT: ""   # force empty so Gradle won’t use it
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk  # match ANDROID_HOME
 
     steps:
       - name: Checkout repository
