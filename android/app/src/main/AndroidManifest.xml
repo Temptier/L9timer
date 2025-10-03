@@ -1,7 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.bosstimers">
 
+    <!-- Internet for WebView -->
     <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- Required for Foreground Service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="true"
@@ -18,5 +22,10 @@
             </intent-filter>
         </activity>
 
+        <!-- Foreground Service Declaration -->
+        <service
+            android:name=".TimerService"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 </manifest>
