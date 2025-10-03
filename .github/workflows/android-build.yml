@@ -43,16 +43,19 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # 🆕 Build frontend and copy to Android assets
+      - name: Build frontend
+        run: npm run build
+
+      - name: Copy frontend into assets
+        run: |
+          rm -rf android/app/src/main/assets/*
+          mkdir -p android/app/src/main/assets
+          cp -r build/* android/app/src/main/assets/
+
       - name: Make gradlew executable
         working-directory: android
         run: chmod +x gradlew
-
-      # ✅ NEW STEP to force AndroidX
-      - name: Force AndroidX flags
-        working-directory: android
-        run: |
-          echo "android.useAndroidX=true" >> gradle.properties
-          echo "android.enableJetifier=true" >> gradle.properties
 
       - name: Build Debug APK
         working-directory: android
