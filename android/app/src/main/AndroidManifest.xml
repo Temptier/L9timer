@@ -1,11 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.bosstimers">
 
+    <!-- ✅ Add this -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
-        android:icon="@android:drawable/ic_menu_compass"
+        android:icon="@mipmap/sym_def_app_icon"
         android:label="L9BossTimers"
-        android:roundIcon="@android:drawable/ic_menu_compass"
+        android:roundIcon="@mipmap/sym_def_app_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
@@ -19,5 +22,4 @@
         </activity>
 
     </application>
-
 </manifest>
