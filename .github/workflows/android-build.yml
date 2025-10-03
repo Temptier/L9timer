@@ -1,8 +1,8 @@
 name: Build Android APK
 
 on:
-  workflow_dispatch:   # manual trigger
-  push:                # auto trigger on main branch
+  workflow_dispatch:
+  push:
     branches:
       - main
 
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
-      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk  # match ANDROID_HOME
 
     steps:
       - name: Checkout repository
@@ -31,7 +31,7 @@ jobs:
       - name: Install Android SDK
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip rsync
+          sudo apt-get install -y wget unzip
           wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
           mkdir -p $ANDROID_HOME/cmdline-tools
           unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
@@ -43,22 +43,16 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # 🆕 Copy static frontend into Android assets
-      - name: Copy static files into assets
-        run: |
-          rm -rf android/app/src/main/assets/*
-          mkdir -p android/app/src/main/assets
-          rsync -av \
-            --exclude='android' \
-            --exclude='node_modules' \
-            --exclude='.github' \
-            --exclude='.git' \
-            --exclude='.gitignore' \
-            ./ android/app/src/main/assets/
-
       - name: Make gradlew executable
         working-directory: android
         run: chmod +x gradlew
+
+      # ✅ NEW STEP to force AndroidX
+      - name: Force AndroidX flags
+        working-directory: android
+        run: |
+          echo "android.useAndroidX=true" >> gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
 
       - name: Build Debug APK
         working-directory: android
