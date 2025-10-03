@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Load your hosted webpage (replace with your actual link)
-        webView.loadUrl("https://temptier.github.io/L9timer//");
+        webView.loadUrl("https://temptier.github.io/L9S9BossTimer/");
 
         setContentView(webView);
     }
