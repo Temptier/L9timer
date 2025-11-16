@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Boss Timers — Manual & Scheduled</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- User Info Modal -->
+  <div id="userModal" class="modal">
+    <div id="userModalContent" class="modal-card">
+      <h3>Enter Your Info</h3>
+      <input id="modalIGN" type="text" placeholder="IGN" />
+      <input id="modalGuild" type="text" placeholder="Guild" />
+      <div class="modal-actions">
+        <button id="modalSubmit" class="btn primary">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="mainContent" style="display:none">
+    <header>
+      <div class="header-left">
+        <strong>L9Boss Timers</strong>
+        <div class="controls">
+          <button id="restartAll" class="btn">Restart All</button>
+          <button id="stopAll" class="btn ghost">Stop All</button>
+          <button id="sendTimers" class="btn">Send Timers</button>
+          <button id="switchWebhook" class="btn ghost">Webhook: —</button>
+          <button id="toggleTheme" class="btn ghost">Toggle Theme</button>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="userInfo" class="user-badge">IGN: — | Guild: —</div>
+        <button id="changeUser" class="btn ghost">Change</button>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <h2>Manual Boss Timers</h2>
+        <div class="row">
+          <input id="manualName" type="text" placeholder="Boss Name">
+          <input id="manualHours" type="number" placeholder="Hours">
+          <button id="addManual" class="btn">Add Manual Timer</button>
+        </div>
+        <div id="manualBossGrid" class="timer-grid"></div>
+      </section>
+
+      <section>
+        <h2>Scheduled Bosses</h2>
+        <div class="row">
+          <input id="schedName" type="text" placeholder="Boss Name">
+          <input id="schedTime" type="text" placeholder="Schedule e.g. mon 12:30,tue 15:00">
+          <button id="addScheduled" class="btn">Add Scheduled Boss</button>
+        </div>
+        <div id="scheduledBossGrid" class="timer-grid"></div>
+      </section>
+
+      <section>
+        <h2>Recent Visitors (last 10 min)</h2>
+        <div id="visitorLog" class="card">Loading...</div>
+      </section>
+    </main>
+
+    <!-- Confirm Restart All Modal -->
+    <div id="confirmModal" class="overlay hidden">
+      <div class="modal-card">
+        <p>Restart all manual timers?</p>
+        <label><input id="dontShowAgain" type="checkbox"> Don't ask again</label>
+        <div class="modal-actions">
+          <button id="confirmYes" class="btn primary">Yes</button>
+          <button id="confirmNo" class="btn ghost">No</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collapsible Send Panel -->
+    <div id="sendPanel" class="send-panel">
+      <div id="sendPanelHeader" class="send-panel-header">
+        <strong>📤 Send Selected Timers</strong>
+        <span id="toggleSendPanel" class="toggle">▲</span>
+      </div>
+      <div id="sendPanelContent" class="send-panel-content">
+        <div id="sendPanelTimers" class="send-timers-list"></div>
+        <textarea id="customMessage" placeholder="Optional message..." class="textarea"></textarea>
+        <button id="sendSelected" class="btn primary">Send Selected</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase compat libraries (keeps code simple, similar to your original) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- Modular JS -->
+  <script src="js/Firebase.js"></script>
+  <script src="js/Sound.js"></script>
+  <script src="js/Modal.js"></script>
+  <script src="js/Scheduler.js"></script>
+  <script src="js/Towers.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
