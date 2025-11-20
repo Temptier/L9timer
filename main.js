@@ -197,7 +197,6 @@ function createBossCard(b, isManual = true){
   `;
 
   // --- Add Miss Penalty input dynamically for manual bosses ---
-  // --- Add Miss Penalty input dynamically for manual bosses ---
 if(isManual){
   const missPenaltyDiv = document.createElement('div');
   missPenaltyDiv.className = 'missPenaltyContainer';
@@ -207,6 +206,23 @@ if(isManual){
     <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}" data-boss-id="${b.manual.id}">
   `;
   card.appendChild(missPenaltyDiv);
+
+  // --- Add change listener ---
+  const missInput = missPenaltyDiv.querySelector('.missPenaltyInput');
+  if(missInput && !missInput.dataset.bound){
+    missInput.addEventListener('change', (e) => {
+      const value = parseInt(e.target.value, 10) || 0;
+      const bossId = e.target.dataset.bossId;
+
+      // Update local cache
+      b.manual.missPenalty = value;
+
+      // Persist in Firebase
+      db.ref('misses/' + bossId + '/missPenalty').set(value)
+        .catch(err => console.error('Failed to update miss penalty', err));
+    });
+    missInput.dataset.bound = '1';
+  }
 }
 
   // apply guild restrictions early if known
