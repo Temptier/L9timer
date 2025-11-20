@@ -196,35 +196,40 @@ function createBossCard(b, isManual = true){
     <div class="small lastBy"></div>
   `;
 
-  // --- Add Miss Penalty input dynamically for manual bosses ---
-// --- Add Miss Penalty input dynamically for manual bosses ---
+ // --- Inside createBossCard (manual bosses only) ---
 if(isManual){
   const missPenaltyDiv = document.createElement('div');
   missPenaltyDiv.className = 'missPenaltyContainer';
-  const currentMiss = b.manual.missPenalty ?? (missesCache[b.manual.id]?.missPenalty || 0);
+  const currentMiss = b.manual.missPenalty ?? (missesCache[b.manual.id]?.missPenalty ?? 3); // default 3 min
   missPenaltyDiv.innerHTML = `
     <label>Miss Penalty (min): </label>
-    <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}">
+    <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}" data-boss-id="${b.manual.id}">
   `;
   card.appendChild(missPenaltyDiv);
 }
+  // --- Inside attachManualHandlers, after creating card ---
+const missInput = card.querySelector('.missPenaltyInput');
+if(missInput && !missInput.dataset.bound){
+  const bossId = missInput.dataset.bossId;
 
-  // --- Add change listener ---
-  const missInput = missPenaltyDiv.querySelector('.missPenaltyInput');
-  if(missInput && !missInput.dataset.bound){
-    missInput.addEventListener('change', (e) => {
-      const value = parseInt(e.target.value, 10) || 0;
-      const bossId = e.target.dataset.bossId;
-
-      // Update local cache
-      b.manual.missPenalty = value;
-
-      // Persist in Firebase
-      db.ref('misses/' + bossId + '/missPenalty').set(value)
-        .catch(err => console.error('Failed to update miss penalty', err));
+  // Update local + Firebase on change
+  missInput.addEventListener('change', () => {
+    const value = parseInt(missInput.value, 10) || 0;
+    const manual = bossMap[b.label].manual;
+    manual.missPenalty = value;
+    db.ref('misses/' + bossId + '/missPenalty').set(value).catch(err=>{
+      console.error('Failed to update miss penalty', err);
     });
-    missInput.dataset.bound = '1';
-  }
+  });
+
+  // Live update if Firebase changes
+  db.ref('misses/' + bossId + '/missPenalty').on('value', snap => {
+    const val = snap.val() ?? 3; // default 3 min
+    if(parseInt(missInput.value,10) !== val) missInput.value = val;
+    bossMap[b.label].manual.missPenalty = val;
+  });
+
+  missInput.dataset.bound = '1';
 }
 
   // apply guild restrictions early if known
