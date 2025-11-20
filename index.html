@@ -1,62 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>L9Boss Timers</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>L9Boss Timers Dashboard</title>
 <style>
-:root {
-  --bg:#0d1117; --fg:#e6edf3; --accent:#58a6ff; --card-bg:#161b22;
-  --expired:#f85149; --warn:#f0c443; --success:#2ecc71;
+:root{
+  --bg:#0d1117; --fg:#e6edf3; --accent:#58a6ff;
+  --card-bg:#161b22; --expired:#f85149; --warn:#f0c443; --today:#2ecc71;
 }
-body { margin:0; font-family:Inter,system-ui; background:var(--bg); color:var(--fg);}
-body.light { --bg:#f8f8f8; --fg:#111; --accent:#007777; --card-bg:#fff; }
-
-.container { max-width:1200px; margin:0 auto; padding:16px; }
-header { display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--card-bg); border-bottom:1px solid rgba(255,255,255,0.08); flex-wrap:wrap; gap:12px; border-radius:8px 8px 0 0;}
-.header-left, .header-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
-button { background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:600; transition:all 0.2s ease;}
-button:hover { opacity:0.85; }
-button.ghost { background:transparent; border:1px solid rgba(255,255,255,0.08); color:var(--fg); }
-
-main { padding:16px; display:flex; flex-direction:column; gap:24px; }
-
-h2 { color:var(--accent); margin-bottom:12px; }
-
-input, textarea { padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--fg); width:100%; box-sizing:border-box; }
-textarea { resize:none; }
-
-.timer-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
-.card { background:var(--card-bg); border-radius:12px; padding:16px; border:1px solid rgba(255,255,255,0.08); box-shadow:0 4px 16px rgba(0,0,0,0.3); display:flex; flex-direction:column; gap:6px; transition:all 0.2s ease; }
-.card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.35); }
-.label { font-weight:700; font-size:1.1rem; }
-.clock { font-size:1.3rem; font-weight:700; color:var(--accent); }
-.datetime, .small { font-size:0.85rem; color:rgba(255,255,255,0.7); }
-.expired { border-color:var(--expired); color:var(--expired); }
-.warning { border-color:var(--warn); color:var(--warn); }
-.timer-today { box-shadow:0 0 12px 2px var(--success); border-color:var(--success); }
-
-#userModal { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; z-index:9999; }
-#userModalContent { background:var(--card-bg); padding:24px; border-radius:12px; text-align:center; width:320px; display:flex; flex-direction:column; gap:12px; }
-
-#sendPanel { position:fixed; bottom:0; left:0; right:0; background:var(--card-bg); border-top:1px solid rgba(255,255,255,0.1); padding:12px 16px; box-shadow:0 -4px 16px rgba(0,0,0,0.4); border-radius:12px 12px 0 0; z-index:999; }
-#sendPanelHeader { display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
-#sendPanelContent { margin-top:12px; max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
-
-#todaysBosses, #visitorLog { background:var(--card-bg); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); max-height:200px; overflow:auto; }
-
-@media(max-width:600px){
-  header { flex-direction:column; align-items:flex-start; }
-  .timer-grid { grid-template-columns:1fr; }
-  .clock { font-size:1rem; }
-  .datetime, .small { font-size:0.75rem; }
+body.light{
+  --bg:#f8f8f8; --fg:#111; --accent:#007777; --card-bg:#fff;
 }
+body{
+  margin:0; font-family:Inter,system-ui,monospace; background:var(--bg); color:var(--fg);
+}
+.container{max-width:1200px; margin:0 auto; padding:16px;}
+header{
+  display:flex; justify-content:space-between; align-items:center; padding:16px; 
+  background:var(--card-bg); border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.header-left, .header-right{display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+button{
+  background:var(--accent); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer;
+  font-weight:600; transition:0.2s;
+}
+button.ghost{background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--fg);}
+button:hover{opacity:0.85;}
+.user-badge{font-size:0.95rem; opacity:0.9;}
+
+main{padding:16px; display:flex; flex-direction:column; gap:24px;}
+
+section h2{color:var(--accent); margin-bottom:12px; font-size:1.3rem;}
+
+.timer-grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;
+}
+
+.card{
+  background:var(--card-bg); border-radius:12px; padding:16px; border:1px solid rgba(255,255,255,0.08);
+  display:flex; flex-direction:column; gap:10px; box-shadow:0 4px 16px rgba(0,0,0,0.3);
+  transition:all 0.2s ease;
+}
+.card:hover{transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.35);}
+
+.card-header{display:flex; justify-content:space-between; align-items:center;}
+.label{font-weight:700; font-size:1.2rem;}
+.status-dot{width:12px; height:12px; border-radius:50%; background:#58a6ff;}
+.status-dot.running{background:var(--accent);}
+.status-dot.warning{background:var(--warn);}
+.status-dot.expired{background:var(--expired);}
+.status-dot.today{background:var(--today);}
+
+.clock{font-size:1.5rem; font-weight:700; color:var(--accent);}
+.datetime{font-size:0.9rem; color:rgba(255,255,255,0.7);}
+
+.card-actions{display:flex; gap:8px; flex-wrap:wrap;}
+.card-actions button{flex:1; padding:6px 10px; font-size:0.9rem;}
+.card-actions .ghost{background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--fg);}
+
+input[type="text"], input[type="number"], textarea{
+  padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:var(--fg);
+  width:100%; box-sizing:border-box;
+}
+
+#visitorLog, #todaysBosses{
+  background:var(--card-bg); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); max-height:250px; overflow:auto;
+}
+
+#userModal{
+  position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; z-index:9999;
+}
+#userModalContent{
+  background:var(--card-bg); padding:24px; border-radius:12px; text-align:center; width:320px;
+}
+#userModalContent input{margin-bottom:12px;}
+
+#sendPanel{
+  position:fixed; bottom:0; left:0; right:0; background:var(--card-bg); border-top:1px solid rgba(255,255,255,0.1);
+  padding:12px; box-shadow:0 -4px 12px rgba(0,0,0,0.4); z-index:9999;
+}
+#sendPanelContent{margin-top:10px; max-height:250px; overflow-y:auto;}
+#sendPanelTimers{display:flex; flex-direction:column; gap:6px;}
 </style>
 </head>
 <body>
 
-<!-- User Modal -->
+<!-- User Info Modal -->
 <div id="userModal">
   <div id="userModalContent">
     <h3>Enter Your Info</h3>
@@ -70,7 +100,7 @@ textarea { resize:none; }
   <header>
     <div class="header-left">
       <strong>L9Boss Timers</strong>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button id="restartAll">Restart All</button>
         <button id="stopAll" class="ghost">Stop All</button>
         <button id="sendTimers">Send Timers</button>
@@ -84,42 +114,42 @@ textarea { resize:none; }
     </div>
   </header>
 
-  <main>
-    <section>
-      <h2>Manual Boss Timers</h2>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-        <input id="manualName" type="text" placeholder="Boss Name">
-        <input id="manualHours" type="number" placeholder="Hours">
-        <button id="addManual">Add</button>
-      </div>
-      <div id="manualBossGrid" class="timer-grid"></div>
-    </section>
+<main>
+  <section>
+    <h2>Manual Boss Timers</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+      <input id="manualName" type="text" placeholder="Boss Name">
+      <input id="manualHours" type="number" placeholder="Hours">
+      <button id="addManual">Add Manual Timer</button>
+    </div>
+    <div id="manualBossGrid" class="timer-grid"></div>
+  </section>
 
-    <section>
-      <h2>Scheduled Bosses</h2>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-        <input id="schedName" type="text" placeholder="Boss Name">
-        <input id="schedTime" type="text" placeholder="Schedule e.g. mon 12:30,tue 15:00">
-        <button id="addScheduled">Add</button>
-      </div>
-      <div id="scheduledBossGrid" class="timer-grid"></div>
-    </section>
+  <section>
+    <h2>Scheduled Bosses</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+      <input id="schedName" type="text" placeholder="Boss Name">
+      <input id="schedTime" type="text" placeholder="Schedule e.g. mon 12:30,tue 15:00">
+      <button id="addScheduled">Add Scheduled Boss</button>
+    </div>
+    <div id="scheduledBossGrid" class="timer-grid"></div>
+  </section>
 
-    <section>
-      <h2>Today's Boss Spawn</h2>
-      <div id="todaysBosses">Loading...</div>
-    </section>
+  <section>
+    <h2>Today's Boss Spawn</h2>
+    <div id="todaysBosses">Loading...</div>
+  </section>
 
-    <section>
-      <h2>Recent Visitors (last 10 min)</h2>
-      <div id="visitorLog">Loading...</div>
-    </section>
-  </main>
+  <section>
+    <h2>Recent Visitors (last 10 min)</h2>
+    <div id="visitorLog">Loading...</div>
+  </section>
+</main>
 </div>
 
 <!-- Collapsible Send Panel -->
 <div id="sendPanel">
-  <div id="sendPanelHeader">
+  <div id="sendPanelHeader" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
     <strong>📤 Send Selected Timers</strong>
     <span id="toggleSendPanel">▲</span>
   </div>
@@ -133,6 +163,5 @@ textarea { resize:none; }
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="main.js"></script>
-
 </body>
 </html>
