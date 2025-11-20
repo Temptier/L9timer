@@ -345,19 +345,24 @@ function attachManualHandlers(){
     }
 
     // --- Delete button ---
-    if(deleteBtn && !deleteBtn.dataset.bound){
-      deleteBtn.addEventListener('click', ()=>{
-        if(!confirm(`Delete manual timer for ${label}?`)) return;
-        const idx = manualDefs.findIndex(m=>m.label === label);
-        if(idx !== -1) manualDefs.splice(idx, 1);
-        db.ref('timers/'+manual.id).set(null).catch(()=>{});
-        db.ref('misses/'+manual.id).set(null).catch(()=>{});
-        mergeTimers();
-        renderBossTimers();
-        sendVisitorDiscord(`🗑️ **${label}** manual timer deleted by **${currentUser?.user || 'Unknown'} [${currentUser?.guild || ''}]**`);
-      });
-      deleteBtn.dataset.bound = '1';
-    }
+   // --- Delete button ---
+if(deleteBtn && !deleteBtn.dataset.bound){
+  deleteBtn.addEventListener('click', ()=>{
+    if(!confirm(`Delete manual timer for ${label}?`)) return;
+    const idx = manualDefs.findIndex(m=>m.label === label);
+    if(idx !== -1) manualDefs.splice(idx, 1);
+    
+    // Remove from Firebase
+    db.ref('timers/'+manual.id).set(null).catch(()=>{});
+    db.ref('misses/'+manual.id).set(null).catch(()=>{});
+    db.ref('manualTimers/'+manual.id).set(null).catch(()=>{}); // <-- remove from persistent storage
+
+    mergeTimers();
+    renderBossTimers();
+    sendVisitorDiscord(`🗑️ **${label}** manual timer deleted by **${currentUser?.user || 'Unknown'} [${currentUser?.guild || ''}]**`);
+  });
+  deleteBtn.dataset.bound = '1';
+}
 
     // --- Send button ---
     if(sendBtn && !sendBtn.dataset.bound){
@@ -591,6 +596,18 @@ function fetchTimers(){
   db.ref('misses').on('value', snap=>{
     missesCache = snap.val() || {};
   }, err=>console.error(err));
+db.ref('manualTimers').on('value', snap => {
+  const manualData = snap.val() || {};
+  // Remove old custom timers
+  for(let i = manualDefs.length - 1; i >= 0; i--){
+    if(manualDefs[i].isCustom) manualDefs.splice(i,1);
+  }
+
+  // Add fetched timers
+  Object.values(manualData).forEach(m => manualDefs.push(m));
+  mergeTimers();
+  renderBossTimers();
+}, err => console.error(err));
 
   // visitor log listener (last 10 minutes)
   const cutoff = Date.now() - 10*60*1000;
@@ -761,14 +778,20 @@ if(addManualBtn){
     if(manualDefs.some(m => m.id === id)){
       alert('Boss already exists'); return;
     }
+
     const newBoss = { label: name, hours: hours, id: id, isCustom: true };
-    manualDefs.push(newBoss);
-    // create a DB placeholder so listeners have something (optional)
-    db.ref('timers/'+id).set(null).catch(()=>{});
-    mergeTimers();
-    renderBossTimers();
-    manualNameInput.value = '';
-    manualHoursInput.value = '';
+
+    // Save to Firebase for persistence
+    db.ref('manualTimers/'+id).set(newBoss).then(()=>{
+      manualDefs.push(newBoss);
+      mergeTimers();
+      renderBossTimers();
+      manualNameInput.value = '';
+      manualHoursInput.value = '';
+    }).catch(err=>{
+      console.error('Failed to add manual timer', err);
+      alert('Failed to save manual timer.');
+    });
   });
 }
 
