@@ -427,28 +427,32 @@ function attachScheduledHandlers(){
 }  
   
 // ---------- Compute Manual Send (with iterative miss penalty) ----------  
-async function computeManualSendTime(manual){  
-  const running = startTimes[manual.id];  
-  let end = null;  
-  
-  if(running && running.startedAt){  
-    end = new Date(running.startedAt);  
-    const baseMs = manual.hours * 3600 * 1000;  
-    const miss = missesCache[manual.id] || { missCount: 0, missPenalty: 0 };  
-    for(let i = 0; i < (miss.missCount || 0); i++){  
-      end = new Date(end.getTime() + baseMs + (miss.missPenalty || 0) * 60000);  
-    }  
-    // add base hours for current  
-    end = new Date(end.getTime() + baseMs);  
-    return `${end.toLocaleDateString(undefined,{weekday:'short',day:'2-digit',month:'short'})} ${end.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}`;  
-  }  
-  
-  // fallback if no running timer  
-  const miss = missesCache[manual.id] || null;  
-  if(miss && miss.nextMissTime){  
-    return formatDateForMsg(miss.nextMissTime) + ` (Misses: ${miss.missCount || 0})`;  
-  }  
-  return '--:--';  
+async function function computeManualSendTime(manual){
+  const data = startTimes[manual.id];
+  const miss = missesCache[manual.id] || { missCount: 0, missPenalty: manual.missPenalty ?? 3 };
+
+  if(data && data.startedAt){
+    let end = new Date(data.startedAt);
+    const baseMs = manual.hours * 3600 * 1000;
+    const penaltyMs = (miss.missPenalty || 3) * 60000;
+
+    // Add penalty for each miss
+    for(let i = 0; i < (miss.missCount || 0); i++){
+      end = new Date(end.getTime() + baseMs + penaltyMs);
+    }
+
+    // Add base time for current run
+    end = new Date(end.getTime() + baseMs);
+
+    return `${end.toLocaleDateString(undefined,{weekday:'short',day:'2-digit',month:'short'})} ${end.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}`;
+  }
+
+  // Fallback if no running timer
+  if(miss.nextMissTime){
+    return formatDateForMsg(miss.nextMissTime) + ` (Misses: ${miss.missCount || 0})`;
+  }
+
+  return '--:--';
 }  
   
 /* ---------- updateBossClocks (fixed data var, scheduling logic) ---------- */  
@@ -549,54 +553,45 @@ end = new Date(end.getTime() + baseMs);
       }  
   
       // --- Update clock display & auto-restart ---  
-      if(remaining !== null && clockEl){  
-        clockEl.textContent = secondsToHMS(remaining);  
-  
-        if (remaining <= 0) {  
-  card.classList.add('expired');  
-  card.classList.remove('timer-running','timer-today');  
-  
-  // === AUTO-RESTART: PREVENT MULTIPLE TRIGGERS ===  
-  if (b.manual && !startTimes["auto_"+b.manual.id]) {  
-  
-    const baseMs = b.manual.hours * 3600 * 1000;  
-    const penaltyMs = (b.manual.missPenalty || 0) * 60000;  
-  
-    // === PreviousEnd = timer just expired ===  
-    const previousEnd = Date.now();  
-  
-    // === NEW END ===  
-    const newEnd = previousEnd + baseMs + penaltyMs;  
-  
-    // === Increment Miss Count ===  
-    const miss = missesCache[b.manual.id] || { missCount: 0, missPenalty: b.manual.missPenalty || 0 };  
-    const newMissCount = (miss.missCount || 0) + 1;  
-  
-    // === Restart Timer ===  
-    db.ref("timers/" + b.manual.id)  
-      .set({ startedAt: previousEnd, user: "AUTO", guild: "" });  
-  
-    // === Log Restart ===  
-    db.ref("timerLogs/" + b.manual.id)  
-      .push({ startedAt: previousEnd, autoRestart: true, user: "AUTO", guild: "" });  
-  
-    // === Update Miss Info with NEW END ===  
-    db.ref("misses/" + b.manual.id)  
-      .set({  
-        missCount: newMissCount,  
-        missPenalty: b.manual.missPenalty || 0,  
-        nextMissTime: newEnd  
-      });  
-  
-    // Prevent double triggers  
-    startTimes["auto_" + b.manual.id] = true;  
-  
-    // Discord notification  
-    sendVisitorDiscord(  
-      `🔄 **${b.label}** auto-restarted (miss #${newMissCount}) — next end at ${new Date(newEnd).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`  
-    );  
-  }  
-} else {  
+      if (remaining <= 0) {
+  card.classList.add('expired');
+  card.classList.remove('timer-running','timer-today');
+
+  // === AUTO-RESTART: PREVENT MULTIPLE TRIGGERS ===
+  if (b.manual && !startTimes["auto_"+b.manual.id]) {
+
+    const baseMs = b.manual.hours * 3600 * 1000;
+    const penaltyMs = (b.manual.missPenalty || 3) * 60000; // default 3 min
+
+    const now = Date.now();
+
+    // Increment Miss Count
+    const miss = missesCache[b.manual.id] || { missCount: 0, missPenalty: b.manual.missPenalty ?? 3 };
+    const newMissCount = (miss.missCount || 0) + 1;
+
+    // Restart Timer
+    db.ref("timers/" + b.manual.id).set({ startedAt: now, user: "AUTO", guild: "" });
+
+    // Log Restart
+    db.ref("timerLogs/" + b.manual.id).push({ startedAt: now, autoRestart: true, user: "AUTO", guild: "" });
+
+    // Update Miss Info with NEW END
+    const newEnd = now + baseMs + penaltyMs;
+    db.ref("misses/" + b.manual.id).set({
+      missCount: newMissCount,
+      missPenalty: b.manual.missPenalty ?? 3,
+      nextMissTime: newEnd
+    });
+
+    // Prevent double triggers
+    startTimes["auto_" + b.manual.id] = true;
+
+    // Discord notification
+    sendVisitorDiscord(
+      `🔄 **${b.label}** auto-restarted (miss #${newMissCount}) — next end at ${new Date(newEnd).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`
+    );
+  }
+}  else {  
           // Determine if same-day  
           let isSameDay = false;  
           if(b.manual && startTimes[b.manual.id] && startTimes[b.manual.id].startedAt){  
