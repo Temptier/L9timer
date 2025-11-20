@@ -197,15 +197,17 @@ function createBossCard(b, isManual = true){
   `;
 
   // --- Add Miss Penalty input dynamically for manual bosses ---
+// --- Add Miss Penalty input dynamically for manual bosses ---
 if(isManual){
   const missPenaltyDiv = document.createElement('div');
   missPenaltyDiv.className = 'missPenaltyContainer';
   const currentMiss = b.manual.missPenalty ?? (missesCache[b.manual.id]?.missPenalty || 0);
   missPenaltyDiv.innerHTML = `
     <label>Miss Penalty (min): </label>
-    <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}" data-boss-id="${b.manual.id}">
+    <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}">
   `;
   card.appendChild(missPenaltyDiv);
+}
 
   // --- Add change listener ---
   const missInput = missPenaltyDiv.querySelector('.missPenaltyInput');
