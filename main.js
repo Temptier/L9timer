@@ -281,42 +281,50 @@ function createBossCard(b, isManual = true) {
 
   // --- Dynamic clock & status ---
   function updateClock() {
-    const now = new Date();
-    let endTime;
-    if (isManual) {
-      let startTime = b.manual.startTime ? new Date(b.manual.startTime) : new Date();
-endTime = new Date(startTime);
-endTime.setHours(endTime.getHours() + manualHours);
-    } else {
-      // pick next scheduled time today
-      const nextSchedule = schedules.find(s => {
-        const [h, m] = time.split(':').map(x => parseInt(x,10) || 0);
-        const dayNames = ['sun','mon','tue','wed','thu','fri','sat'];
-        if (d.getDay() !== dayNames.indexOf(day.toLowerCase())) return false;
-        d.setHours(h, m, 0, 0);
-        return d > now;
-      });
-      if (nextSchedule) {
-        const [day, time] = nextSchedule.split(' ');
-        const [h, m] = time.split(':').map(Number);
-        endTime = new Date();
-        endTime.setHours(h, m, 0, 0);
-      } else {
-        endTime = now;
-      }
-    }
+  const now = new Date();
+  let endTime;
 
-    const diff = Math.max(0, Math.floor((endTime - now) / 1000));
+  if (isManual) {
+    const startTime = b.manual.startTime ? new Date(b.manual.startTime) : new Date();
+    endTime = new Date(startTime);
+    endTime.setHours(endTime.getHours() + manualHours);
+  } else {
+    const nextSchedule = schedules.find(s => {
+      const [day, time] = s.split(' ');
+      if (!day || !time) return false;
+      const [h, m] = time.split(':').map(x => parseInt(x,10) || 0);
+      const d = new Date();
+      const dayNames = ['sun','mon','tue','wed','thu','fri','sat'];
+      if (d.getDay() !== dayNames.indexOf(day.toLowerCase())) return false;
+      d.setHours(h, m, 0, 0);
+      return d > now;
+    });
+
+    if (nextSchedule) {
+      const [day, time] = nextSchedule.split(' ');
+      const [h, m] = time.split(':').map(x => parseInt(x,10) || 0);
+      endTime = new Date();
+      endTime.setHours(h, m, 0, 0);
+    } else {
+      endTime = new Date(); // fallback
+    }
+  }
+
+  const diff = Math.max(0, Math.floor((endTime - now) / 1000));
+
+  if (isNaN(diff)) {
+    clockDiv.textContent = '00:00:00';
+    statusDot.className = 'status-dot expired';
+  } else {
     const h = String(Math.floor(diff / 3600)).padStart(2,'0');
     const m = String(Math.floor((diff % 3600)/60)).padStart(2,'0');
     const s = String(diff % 60).padStart(2,'0');
     clockDiv.textContent = `${h}:${m}:${s}`;
 
-    // Status dot colors
     if (diff === 0) {
       statusDot.className = 'status-dot expired';
       card.classList.add('timer-ended');
-    } else if (diff <= 600) { // less than 10 min
+    } else if (diff <= 600) {
       statusDot.className = 'status-dot warning';
       card.classList.add('warning');
     } else {
@@ -324,6 +332,7 @@ endTime.setHours(endTime.getHours() + manualHours);
       card.classList.remove('warning','timer-ended');
     }
   }
+}
 
   setInterval(updateClock, 1000);
   updateClock(); // initial call
