@@ -168,32 +168,38 @@ function mergeTimers(){
 /* ---------- Create card markup ---------- */
 function createBossCard(b, isManual = true){
   const card = document.createElement('div');
-  card.className = 'card';
+  card.className = 'card glass-card';   // existing classes
+  card.classList.add('timer-card');     // add the new professional card style
   card.dataset.label = b.label;
 
   const manualHours = b.manual ? b.manual.hours : null;
   const schedules = b.scheduled ? b.scheduled.schedule.split(',').map(s=>s.trim()) : [];
   const schedHtml = schedules.length ? `<div class="small">Schedule: ${schedules.join(', ')}</div>` : '';
 
-  let buttonsHtml = '';
-  if(isManual){
-    buttonsHtml = `
-      <div class="small endtime"></div>
-      <button class="restartBtn">Restart (${manualHours}h)</button>
-      <button class="stopBtn">Stop</button>
-      ${b.manual.isCustom ? '<button class="deleteBtn">Delete</button>' : ''}
-    `;
-  }
-  buttonsHtml += `<button class="sendBtn" style="margin-top:8px;">Send Timer</button>`;
+  const currentMiss = b.manual?.missPenalty ?? 3;
 
   card.innerHTML = `
-    <div class="label">${b.label}</div>
-    <div class="clock">--:--:--</div>
-    <div class="datetime"></div>
-    <div class="small missCount"></div>
-    ${buttonsHtml}
+    <div class="timer-title">${b.label}</div>
+    <div class="timer-clock clock">--:--:--</div>
+    <div class="timer-subtext datetime"></div>
+    <div class="timer-subtext small missCount"></div>
+
+    <div class="timer-miss">
+      Miss Penalty (min):
+      <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}">
+    </div>
+
+    <div class="timer-actions">
+      ${isManual ? `
+        <button class="timer-btn-primary restartBtn">Restart (${manualHours}h)</button>
+        <button class="timer-btn stopBtn">Stop</button>
+        ${b.manual.isCustom ? `<button class="timer-btn deleteBtn">Delete</button>` : ""}
+      ` : ""}
+      <button class="timer-btn sendBtn">Send</button>
+    </div>
+
     ${schedHtml}
-    <div class="small lastBy"></div>
+    <div class="timer-subtext lastBy"></div>
   `;
 
   /* ----------------------------------------------------
