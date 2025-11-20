@@ -166,68 +166,77 @@ function mergeTimers(){
 }
 
 /* ---------- Create card markup ---------- */
-function createBossCard(b, isManual = true) {
+function createBossCard(b, isManual = true){
   const card = document.createElement('div');
-  card.classList.add("timer-card", "glass-card"); // professional style
+  card.className = 'card';
+  card.dataset.label = b.label;
 
-  const manualHours = b.manual?.hours ?? null;
-  const schedules = b.scheduled?.schedule?.split(',').map(s => s.trim()) ?? [];
-  const schedHtml = schedules.length ? `<div class="timer-subtext">Schedule: ${schedules.join(', ')}</div>` : '';
+  const manualHours = b.manual ? b.manual.hours : null;
+  const schedules = b.scheduled ? b.scheduled.schedule.split(',').map(s=>s.trim()) : [];
+  const schedHtml = schedules.length ? `<div class="small">Schedule: ${schedules.join(', ')}</div>` : '';
 
-  // Base inner HTML
+  let buttonsHtml = '';
+  if(isManual){
+    buttonsHtml = `
+      <div class="small endtime"></div>
+      <button class="restartBtn">Restart (${manualHours}h)</button>
+      <button class="stopBtn">Stop</button>
+      ${b.manual.isCustom ? '<button class="deleteBtn">Delete</button>' : ''}
+    `;
+  }
+  buttonsHtml += `<button class="sendBtn" style="margin-top:8px;">Send Timer</button>`;
+
   card.innerHTML = `
-    <div class="timer-title">${b.label}</div>
-    <div class="timer-clock clock">--:--:--</div>
-    <div class="timer-subtext datetime"></div>
-    <div class="timer-subtext small missCount"></div>
-
-    <div class="timer-actions">
-      ${isManual ? `
-        <button class="timer-btn-primary restartBtn">Restart (${manualHours}h)</button>
-        <button class="timer-btn stopBtn">Stop</button>
-        ${b.manual.isCustom ? `<button class="timer-btn deleteBtn">Delete</button>` : ""}
-      ` : ""}
-      <button class="timer-btn sendBtn">Send</button>
-    </div>
-
+    <div class="label">${b.label}</div>
+    <div class="clock">--:--:--</div>
+    <div class="datetime"></div>
+    <div class="small missCount"></div>
+    ${buttonsHtml}
     ${schedHtml}
-    <div class="timer-subtext lastBy"></div>
+    <div class="small lastBy"></div>
   `;
 
-  // --- Manual-only: Miss Penalty ---
-  if (isManual) {
-    const missPenaltyDiv = document.createElement('div');
-    missPenaltyDiv.className = 'timer-miss';
-    const currentMiss = b.manual?.missPenalty ?? 3; // default 3 min
-    missPenaltyDiv.innerHTML = `
-      Miss Penalty (min):
-      <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}" data-boss-id="${b.manual.id}">
-    `;
-    card.appendChild(missPenaltyDiv);
+ // --- Inside createBossCard (manual bosses only) ---
+if(isManual){
+  const missPenaltyDiv = document.createElement('div');
+  missPenaltyDiv.className = 'missPenaltyContainer';
+  const currentMiss = b.manual.missPenalty ?? (missesCache[b.manual.id]?.missPenalty ?? 3); // default 3 min
+  missPenaltyDiv.innerHTML = `
+    <label>Miss Penalty (min): </label>
+    <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}" data-boss-id="${b.manual.id}">
+  `;
+  card.appendChild(missPenaltyDiv);
+}
+  // --- Inside attachManualHandlers, after creating card ---
+const missInput = card.querySelector('.missPenaltyInput');
+if(missInput && !missInput.dataset.bound){
+  const bossId = missInput.dataset.bossId;
 
-    // Bind input to update Firebase + local state
-    const missInput = missPenaltyDiv.querySelector('.missPenaltyInput');
-    if (missInput && !missInput.dataset.bound) {
-      const bossId = missInput.dataset.bossId;
-      missInput.addEventListener('change', () => {
-        const value = parseInt(missInput.value, 10) || 0;
-        b.manual.missPenalty = value;
-        db.ref('misses/' + bossId + '/missPenalty').set(value).catch(console.error);
-      });
-      db.ref('misses/' + bossId + '/missPenalty').on('value', snap => {
-        const val = snap.val() ?? 3;
-        if (parseInt(missInput.value, 10) !== val) missInput.value = val;
-        b.manual.missPenalty = val;
-      });
-      missInput.dataset.bound = '1';
-    }
-  }
+  // Update local + Firebase on change
+  missInput.addEventListener('change', () => {
+    const value = parseInt(missInput.value, 10) || 0;
+    const manual = bossMap[b.label].manual;
+    manual.missPenalty = value;
+    db.ref('misses/' + bossId + '/missPenalty').set(value).catch(err=>{
+      console.error('Failed to update miss penalty', err);
+    });
+  });
 
-  // --- Guild restrictions ---
-  if (currentUser?.guild?.toLowerCase() !== 'vesperial') {
-    ['stopBtn', 'sendBtn', 'restartBtn', 'deleteBtn'].forEach(cls => {
-      const btn = card.querySelector('.' + cls);
-      if (btn) btn.style.display = 'none';
+  // Live update if Firebase changes
+  db.ref('misses/' + bossId + '/missPenalty').on('value', snap => {
+    const val = snap.val() ?? 3; // default 3 min
+    if(parseInt(missInput.value,10) !== val) missInput.value = val;
+    bossMap[b.label].manual.missPenalty = val;
+  });
+
+  missInput.dataset.bound = '1';
+}
+
+  // apply guild restrictions early if known
+  if(currentUser && currentUser.guild && currentUser.guild.toLowerCase() !== 'vesperial'){
+    ['stopBtn','sendBtn'].forEach(cls=>{
+      const btn = card.querySelector('.'+cls);
+      if(btn) btn.style.display = 'none';
     });
   }
 
