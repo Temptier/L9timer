@@ -256,56 +256,20 @@ input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
     </div>
   </header>
 
-<main>
-
-<section>
-    <h2>Today's Boss Spawn</h2>
-    <div id="todaysBosses">Loading...</div>
-  </section>
-
-  <section>
-    <h2>Manual Boss Timers</h2>
-    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
-      <input id="manualName" type="text" placeholder="Boss Name">
-      <input id="manualHours" type="number" placeholder="Hours">
-      <button id="addManual">Add Manual Timer</button>
-    </div>
-    <div id="manualBossGrid" class="timer-grid"></div>
-  </section>
-
-  <section>
-    <h2>Scheduled Bosses</h2>
-    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
-      <input id="schedName" type="text" placeholder="Boss Name">
-      <input id="schedTime" type="text" placeholder="Schedule e.g. mon 12:30,tue 15:00">
-      <button id="addScheduled">Add Scheduled Boss</button>
-    </div>
-    <div id="scheduledBossGrid" class="timer-grid"></div>
-  </section>
-
-
-  <section>
-    <h2>Recent Visitors (last 10 min)</h2>
-    <div id="visitorLog">Loading...</div>
-  </section>
 </main>
-</div>
 
-<!-- Collapsible Send Panel -->
-<div id="sendPanel">
-  <div id="sendPanelHeader" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
-    <strong>📤 Send Selected Timers</strong>
-    <span id="toggleSendPanel">▲</span>
-  </div>
-  <div id="sendPanelContent">
-    <div id="sendPanelTimers"></div>
-    <textarea id="customMessage" placeholder="Optional message..."></textarea>
-    <button id="sendSelected">Send Selected</button>
+<!-- User Modal -->
+<div id="userModal">
+  <div class="modal-content">
+    <h3>User Info</h3>
+    <input id="modalIGN" placeholder="In-Game Name">
+    <input id="modalGuild" placeholder="Guild">
+    <button id="modalSubmit">Save</button>
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="main.js"></script>
 </body>
 </html>
