@@ -284,14 +284,13 @@ function createBossCard(b, isManual = true) {
     const now = new Date();
     let endTime;
     if (isManual) {
-      endTime = new Date(b.manual.startTime);
-      endTime.setHours(endTime.getHours() + manualHours);
+      let startTime = b.manual.startTime ? new Date(b.manual.startTime) : new Date();
+endTime = new Date(startTime);
+endTime.setHours(endTime.getHours() + manualHours);
     } else {
       // pick next scheduled time today
       const nextSchedule = schedules.find(s => {
-        const [day, time] = s.split(' ');
-        const [h, m] = time.split(':').map(Number);
-        const d = new Date();
+        const [h, m] = time.split(':').map(x => parseInt(x,10) || 0);
         const dayNames = ['sun','mon','tue','wed','thu','fri','sat'];
         if (d.getDay() !== dayNames.indexOf(day.toLowerCase())) return false;
         d.setHours(h, m, 0, 0);
