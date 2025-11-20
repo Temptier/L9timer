@@ -166,176 +166,79 @@ function mergeTimers(){
 }
 
 /* ---------- Create card markup ---------- */
-function createBossCard(b, isManual = true) {
+function createBossCard(b, isManual = true){
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.label = b.label;
 
   const manualHours = b.manual ? b.manual.hours : null;
-  const schedules = b.scheduled ? b.scheduled.schedule.split(',').map(s => s.trim()) : [];
+  const schedules = b.scheduled ? b.scheduled.schedule.split(',').map(s=>s.trim()) : [];
   const schedHtml = schedules.length ? `<div class="small">Schedule: ${schedules.join(', ')}</div>` : '';
 
-  // --- Status Dot ---
-  const statusDot = document.createElement('div');
-  statusDot.className = 'status-dot running'; // default
-  statusDot.style.float = 'right';
-  
-  // Card header
-  const cardHeader = document.createElement('div');
-  cardHeader.className = 'card-header';
-  cardHeader.innerHTML = `<div class="label">${b.label}</div>`;
-  cardHeader.appendChild(statusDot);
-  card.appendChild(cardHeader);
-
-  // Clock and datetime
-  const clockDiv = document.createElement('div');
-  clockDiv.className = 'clock';
-  clockDiv.textContent = '--:--:--';
-  card.appendChild(clockDiv);
-
-  const datetimeDiv = document.createElement('div');
-  datetimeDiv.className = 'datetime';
-  card.appendChild(datetimeDiv);
-
-  // Miss count and last by
-  const missDiv = document.createElement('div');
-  missDiv.className = 'small missCount';
-  card.appendChild(missDiv);
-
-  const lastByDiv = document.createElement('div');
-  lastByDiv.className = 'small lastBy';
-  card.appendChild(lastByDiv);
-
-  // Buttons container
-  const btnContainer = document.createElement('div');
-  btnContainer.className = 'card-actions';
-
-  if (isManual) {
-    const restartBtn = document.createElement('button');
-    restartBtn.className = 'restartBtn';
-    restartBtn.textContent = `Restart (${manualHours}h)`;
-    btnContainer.appendChild(restartBtn);
-
-    const stopBtn = document.createElement('button');
-    stopBtn.className = 'stopBtn ghost';
-    stopBtn.textContent = 'Stop';
-    btnContainer.appendChild(stopBtn);
-
-    if (b.manual.isCustom) {
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'deleteBtn ghost';
-      deleteBtn.textContent = 'Delete';
-      btnContainer.appendChild(deleteBtn);
-    }
-
-    // Miss penalty input
-    const missPenaltyDiv = document.createElement('div');
-    missPenaltyDiv.className = 'missPenaltyContainer';
-    const currentMiss = b.manual.missPenalty ?? (missesCache[b.manual.id]?.missPenalty ?? 3);
-    missPenaltyDiv.innerHTML = `
-      <label style="margin-right:6px;">Miss Penalty (min):</label>
-      <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}" data-boss-id="${b.manual.id}" style="width:60px;">
+  let buttonsHtml = '';
+  if(isManual){
+    buttonsHtml = `
+      <div class="small endtime"></div>
+      <button class="restartBtn">Restart (${manualHours}h)</button>
+      <button class="stopBtn">Stop</button>
+      ${b.manual.isCustom ? '<button class="deleteBtn">Delete</button>' : ''}
     `;
-    card.appendChild(missPenaltyDiv);
   }
+  buttonsHtml += `<button class="sendBtn" style="margin-top:8px;">Send Timer</button>`;
 
-  // Send timer button
-  const sendBtn = document.createElement('button');
-  sendBtn.className = 'sendBtn';
-  sendBtn.textContent = 'Send Timer';
-  btnContainer.appendChild(sendBtn);
+  card.innerHTML = `
+    <div class="label">${b.label}</div>
+    <div class="clock">--:--:--</div>
+    <div class="datetime"></div>
+    <div class="small missCount"></div>
+    ${buttonsHtml}
+    ${schedHtml}
+    <div class="small lastBy"></div>
+  `;
 
-  card.appendChild(btnContainer);
+ // --- Inside createBossCard (manual bosses only) ---
+if(isManual){
+  const missPenaltyDiv = document.createElement('div');
+  missPenaltyDiv.className = 'missPenaltyContainer';
+  const currentMiss = b.manual.missPenalty ?? (missesCache[b.manual.id]?.missPenalty ?? 3); // default 3 min
+  missPenaltyDiv.innerHTML = `
+    <label>Miss Penalty (min): </label>
+    <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}" data-boss-id="${b.manual.id}">
+  `;
+  card.appendChild(missPenaltyDiv);
+}
+  // --- Inside attachManualHandlers, after creating card ---
+const missInput = card.querySelector('.missPenaltyInput');
+if(missInput && !missInput.dataset.bound){
+  const bossId = missInput.dataset.bossId;
 
-  // Scheduled HTML
-  if (schedHtml) {
-    const schedDiv = document.createElement('div');
-    schedDiv.innerHTML = schedHtml;
-    card.appendChild(schedDiv);
-  }
-
-  // --- Miss penalty events ---
-  const missInput = card.querySelector('.missPenaltyInput');
-  if (missInput && !missInput.dataset.bound) {
-    const bossId = missInput.dataset.bossId;
-    missInput.addEventListener('change', () => {
-      const value = parseInt(missInput.value, 10) || 0;
-      bossMap[b.label].manual.missPenalty = value;
-      db.ref('misses/' + bossId + '/missPenalty').set(value).catch(err => console.error(err));
+  // Update local + Firebase on change
+  missInput.addEventListener('change', () => {
+    const value = parseInt(missInput.value, 10) || 0;
+    const manual = bossMap[b.label].manual;
+    manual.missPenalty = value;
+    db.ref('misses/' + bossId + '/missPenalty').set(value).catch(err=>{
+      console.error('Failed to update miss penalty', err);
     });
-    db.ref('misses/' + bossId + '/missPenalty').on('value', snap => {
-      const val = snap.val() ?? 3;
-      if (parseInt(missInput.value, 10) !== val) missInput.value = val;
-      bossMap[b.label].manual.missPenalty = val;
-    });
-    missInput.dataset.bound = '1';
-  }
+  });
 
-  // --- Guild restrictions ---
-  if (currentUser && currentUser.guild && currentUser.guild.toLowerCase() !== 'vesperial') {
-    ['stopBtn', 'sendBtn'].forEach(cls => {
-      const btn = card.querySelector('.' + cls);
-      if (btn) btn.style.display = 'none';
-    });
-  }
+  // Live update if Firebase changes
+  db.ref('misses/' + bossId + '/missPenalty').on('value', snap => {
+    const val = snap.val() ?? 3; // default 3 min
+    if(parseInt(missInput.value,10) !== val) missInput.value = val;
+    bossMap[b.label].manual.missPenalty = val;
+  });
 
-  // --- Dynamic clock & status ---
-  function updateClock() {
-  const now = new Date();
-  let endTime;
-
-  if (isManual) {
-    const startTime = b.manual.startTime ? new Date(b.manual.startTime) : new Date();
-    endTime = new Date(startTime);
-    endTime.setHours(endTime.getHours() + manualHours);
-  } else {
-    const nextSchedule = schedules.find(s => {
-      const [day, time] = s.split(' ');
-      if (!day || !time) return false;
-      const [h, m] = time.split(':').map(x => parseInt(x,10) || 0);
-      const d = new Date();
-      const dayNames = ['sun','mon','tue','wed','thu','fri','sat'];
-      if (d.getDay() !== dayNames.indexOf(day.toLowerCase())) return false;
-      d.setHours(h, m, 0, 0);
-      return d > now;
-    });
-
-    if (nextSchedule) {
-      const [day, time] = nextSchedule.split(' ');
-      const [h, m] = time.split(':').map(x => parseInt(x,10) || 0);
-      endTime = new Date();
-      endTime.setHours(h, m, 0, 0);
-    } else {
-      endTime = new Date(); // fallback
-    }
-  }
-
-  const diff = Math.max(0, Math.floor((endTime - now) / 1000));
-
-  if (isNaN(diff)) {
-    clockDiv.textContent = '00:00:00';
-    statusDot.className = 'status-dot expired';
-  } else {
-    const h = String(Math.floor(diff / 3600)).padStart(2,'0');
-    const m = String(Math.floor((diff % 3600)/60)).padStart(2,'0');
-    const s = String(diff % 60).padStart(2,'0');
-    clockDiv.textContent = `${h}:${m}:${s}`;
-
-    if (diff === 0) {
-      statusDot.className = 'status-dot expired';
-      card.classList.add('timer-ended');
-    } else if (diff <= 600) {
-      statusDot.className = 'status-dot warning';
-      card.classList.add('warning');
-    } else {
-      statusDot.className = 'status-dot running';
-      card.classList.remove('warning','timer-ended');
-    }
-  }
+  missInput.dataset.bound = '1';
 }
 
-  setInterval(updateClock, 1000);
-  updateClock(); // initial call
+  // apply guild restrictions early if known
+  if(currentUser && currentUser.guild && currentUser.guild.toLowerCase() !== 'vesperial'){
+    ['stopBtn','sendBtn'].forEach(cls=>{
+      const btn = card.querySelector('.'+cls);
+      if(btn) btn.style.display = 'none';
+    });
+  }
 
   return card;
 }
