@@ -5,40 +5,127 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Boss Timers — Manual & Scheduled</title>
 <style>
-:root{--bg:#0d1117;--fg:#e6edf3;--accent:#58a6ff;--card-bg:#161b22;--expired:#f85149;--warn:#f0c443}
-body.light{--bg:#f8f8f8;--fg:#111;--accent:#007777;--card-bg:#fff}
-body{background:var(--bg);color:var(--fg);font-family:Inter,system-ui,monospace;margin:0}
-.container{max-width:1100px;margin:0 auto;padding:12px}
-header{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--card-bg);border-bottom:1px solid rgba(255,255,255,0.03)}
-.header-left,.header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
-button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--fg)}
-.user-badge{font-size:0.95rem;opacity:0.95}
-main{padding:16px}
-h2{color:var(--accent);margin:6px 0}
-.timer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px}
-.card{background:var(--card-bg);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 8px 24px rgba(0,0,0,0.5)}
-.card>*{margin-bottom:6px}
-.card>*:last-child{margin-bottom:0}
-.label{font-weight:700;margin-bottom:8px}
-.clock{font-size:1.25rem;font-weight:700;margin-bottom:6px}
-.datetime{font-size:0.85rem;color:var(--accent);margin-bottom:6px}
-.small{font-size:0.85rem;color:rgba(255,255,255,0.7)}
-.warning{border-color:var(--warn);color:var(--warn)}
-.expired{border-color:var(--expired);color:var(--expired)}
-input[type="text"],input[type="number"]{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--fg)}
-#visitorLog{background:var(--card-bg);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);max-height:200px;overflow:auto}
-#userModal{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999}
-#userModalContent{background:var(--card-bg);padding:20px;border-radius:10px;text-align:center;width:300px}
-#todaysBosses{background:var(--card-bg);padding:12px;margin-top:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);max-height:200px;overflow:auto}
-.timer-running{box-shadow:0 0 12px 2px rgba(88,166,255,0.8);border-color:var(--accent)}
-.timer-ended{box-shadow:0 0 12px 2px rgba(46,204,113,0.9);border-color:#2ecc71}
-.timer-today{box-shadow:0 0 12px 2px rgba(46,204,113,0.9);border-color:#2ecc71}
+:root {
+  --bg:#0d1117;
+  --fg:#e6edf3;
+  --accent:#58a6ff;
+  --card-bg:#161b22;
+  --expired:#f85149;
+  --warn:#f0c443;
+  --transition:0.2s;
+}
+body.light {
+  --bg:#f8f8f8;
+  --fg:#111;
+  --accent:#007777;
+  --card-bg:#fff;
+}
+body {
+  background:var(--bg);
+  color:var(--fg);
+  font-family:Inter,system-ui,monospace;
+  margin:0;
+}
+.container { max-width:1100px; margin:0 auto; padding:12px; }
+header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  background:var(--card-bg);
+  border-bottom:1px solid rgba(255,255,255,0.03);
+}
+.header-left,.header-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+button {
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:600;
+  transition:all var(--transition);
+}
+button:hover { opacity:0.9; }
+button.ghost {
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.06);
+  color:var(--fg);
+}
+.user-badge { font-size:0.95rem; opacity:0.95; }
+main { padding:16px; }
+h2 { color:var(--accent); margin:6px 0; }
+.timer-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-top:12px; }
+.card {
+  background:var(--card-bg);
+  border-radius:10px;
+  padding:12px;
+  border:1px solid rgba(255,255,255,0.03);
+  box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  display:flex;
+  flex-direction:column;
+}
+.card>* { margin-bottom:6px; }
+.card>*:last-child { margin-bottom:0; }
+.label { font-weight:700; margin-bottom:8px; }
+.clock { font-size:1.25rem; font-weight:700; margin-bottom:6px; }
+.datetime { font-size:0.85rem; color:var(--accent); margin-bottom:6px; }
+.small { font-size:0.85rem; color:rgba(255,255,255,0.7); }
+.warning { border-color:var(--warn); color:var(--warn); }
+.expired { border-color:var(--expired); color:var(--expired); }
+input[type="text"], input[type="number"] {
+  padding:8px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.04);
+  background:transparent;
+  color:var(--fg);
+  width:100%;
+}
+.miss-penalty {
+  padding:6px 10px;
+  border-radius:6px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:transparent;
+  color:var(--fg);
+  width:100%;
+  font-size:0.85rem;
+  margin-top:6px;
+  transition:border-color var(--transition), background var(--transition);
+}
+.miss-penalty:focus { border-color:var(--accent); outline:none; }
+#visitorLog, #todaysBosses {
+  background:var(--card-bg);
+  padding:8px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.03);
+  max-height:200px;
+  overflow:auto;
+}
+#userModal {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.7);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+#userModalContent {
+  background:var(--card-bg);
+  padding:20px;
+  border-radius:10px;
+  text-align:center;
+  width:300px;
+}
+.timer-running { box-shadow:0 0 12px 2px rgba(88,166,255,0.8); border-color:var(--accent); }
+.timer-ended { box-shadow:0 0 12px 2px rgba(46,204,113,0.9); border-color:#2ecc71; }
+.timer-today { box-shadow:0 0 12px 2px rgba(46,204,113,0.9); border-color:#2ecc71; }
+
 @media(max-width:600px){
-  header{flex-direction:column;align-items:stretch}
-  .header-left,.header-right{justify-content:space-between;margin-bottom:8px}
-  .clock{font-size:1rem}
-  .datetime,.small{font-size:0.75rem}
+  header { flex-direction:column; align-items:stretch; }
+  .header-left,.header-right { justify-content:space-between; margin-bottom:8px; }
+  .clock { font-size:1rem; }
+  .datetime,.small { font-size:0.75rem; }
 }
 </style>
 </head>
@@ -48,9 +135,9 @@ input[type="text"],input[type="number"]{padding:8px;border-radius:8px;border:1px
 <div id="userModal">
   <div id="userModalContent">
     <h3>Enter Your Info</h3>
-    <input id="modalIGN" type="text" placeholder="IGN" style="width:100%;margin-bottom:10px;padding:8px;border-radius:6px">
-    <input id="modalGuild" type="text" placeholder="Guild" style="width:100%;margin-bottom:10px;padding:8px;border-radius:6px">
-    <button id="modalSubmit" style="width:100%;padding:8px;border-radius:6px;background:var(--accent);color:#fff;font-weight:600">Submit</button>
+    <input id="modalIGN" type="text" placeholder="IGN">
+    <input id="modalGuild" type="text" placeholder="Guild">
+    <button id="modalSubmit">Submit</button>
   </div>
 </div>
 
@@ -106,23 +193,20 @@ input[type="text"],input[type="number"]{padding:8px;border-radius:8px;border:1px
 </div>
 
 <!-- Collapsible Send Panel -->
-<div id="sendPanel" style="position:fixed;bottom:0;left:0;right:0;background:var(--card-bg);border-top:1px solid rgba(255,255,255,0.1);padding:10px;box-shadow:0 -4px 12px rgba(0,0,0,0.4);z-index:9999;">
+<div id="sendPanel">
   <div id="sendPanelHeader" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
     <strong>📤 Send Selected Timers</strong>
     <span id="toggleSendPanel" style="font-weight:700;cursor:pointer;">▲</span>
   </div>
   <div id="sendPanelContent" style="margin-top:10px;max-height:250px;overflow-y:auto;">
     <div id="sendPanelTimers" style="display:flex;flex-direction:column;gap:6px;"></div>
-    <textarea id="customMessage" placeholder="Optional message..." style="margin-top:10px;width:100%;padding:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--fg);"></textarea>
-    <button id="sendSelected" style="margin-top:10px;width:100%;">Send Selected</button>
+    <textarea id="customMessage" placeholder="Optional message..."></textarea>
+    <button id="sendSelected">Send Selected</button>
   </div>
 </div>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<!-- Scripts: modal.js first, then main.js -->
-
 <script src="main.js"></script>
 
 </body>
