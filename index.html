@@ -1,213 +1,231 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="dark">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Boss Timers — Manual & Scheduled</title>
-<style>
-:root {
-  --bg:#0d1117;
-  --fg:#e6edf3;
-  --accent:#58a6ff;
-  --card-bg:#161b22;
-  --expired:#f85149;
-  --warn:#f0c443;
-  --transition:0.2s;
-}
-body.light {
-  --bg:#f8f8f8;
-  --fg:#111;
-  --accent:#007777;
-  --card-bg:#fff;
-}
-body {
-  background:var(--bg);
-  color:var(--fg);
-  font-family:Inter,system-ui,monospace;
-  margin:0;
-}
-.container { max-width:1100px; margin:0 auto; padding:12px; }
-header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:12px;
-  background:var(--card-bg);
-  border-bottom:1px solid rgba(255,255,255,0.03);
-}
-.header-left,.header-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-button {
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  padding:8px 12px;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
-  transition:all var(--transition);
-}
-button:hover { opacity:0.9; }
-button.ghost {
-  background:transparent;
-  border:1px solid rgba(255,255,255,0.06);
-  color:var(--fg);
-}
-.user-badge { font-size:0.95rem; opacity:0.95; }
-main { padding:16px; }
-h2 { color:var(--accent); margin:6px 0; }
-.timer-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-top:12px; }
-.card {
-  background:var(--card-bg);
-  border-radius:10px;
-  padding:12px;
-  border:1px solid rgba(255,255,255,0.03);
-  box-shadow:0 8px 24px rgba(0,0,0,0.5);
-  display:flex;
-  flex-direction:column;
-}
-.card>* { margin-bottom:6px; }
-.card>*:last-child { margin-bottom:0; }
-.label { font-weight:700; margin-bottom:8px; }
-.clock { font-size:1.25rem; font-weight:700; margin-bottom:6px; }
-.datetime { font-size:0.85rem; color:var(--accent); margin-bottom:6px; }
-.small { font-size:0.85rem; color:rgba(255,255,255,0.7); }
-.warning { border-color:var(--warn); color:var(--warn); }
-.expired { border-color:var(--expired); color:var(--expired); }
-input[type="text"], input[type="number"] {
-  padding:8px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,0.04);
-  background:transparent;
-  color:var(--fg);
-  width:100%;
-}
-.miss-penalty {
-  padding:6px 10px;
-  border-radius:6px;
-  border:1px solid rgba(255,255,255,0.08);
-  background:transparent;
-  color:var(--fg);
-  width:100%;
-  font-size:0.85rem;
-  margin-top:6px;
-  transition:border-color var(--transition), background var(--transition);
-}
-.miss-penalty:focus { border-color:var(--accent); outline:none; }
-#visitorLog, #todaysBosses {
-  background:var(--card-bg);
-  padding:8px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,0.03);
-  max-height:200px;
-  overflow:auto;
-}
-#userModal {
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.7);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-}
-#userModalContent {
-  background:var(--card-bg);
-  padding:20px;
-  border-radius:10px;
-  text-align:center;
-  width:300px;
-}
-.timer-running { box-shadow:0 0 12px 2px rgba(88,166,255,0.8); border-color:var(--accent); }
-.timer-ended { box-shadow:0 0 12px 2px rgba(46,204,113,0.9); border-color:#2ecc71; }
-.timer-today { box-shadow:0 0 12px 2px rgba(46,204,113,0.9); border-color:#2ecc71; }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Boss Timers — Manual & Scheduled</title>
 
-@media(max-width:600px){
-  header { flex-direction:column; align-items:stretch; }
-  .header-left,.header-right { justify-content:space-between; margin-bottom:8px; }
-  .clock { font-size:1rem; }
-  .datetime,.small { font-size:0.75rem; }
-}
-</style>
+  <!-- Tailwind CDN (utility-first) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Feather icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <style>
+    /* Custom theme tokens to coexist with Tailwind */
+    :root{
+      --bg-primary: #0f172a;    /* page bg */
+      --glass: rgba(30,41,59,0.52);
+      --glass-border: rgba(148,163,184,0.08);
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --muted: rgba(226,232,240,0.55);
+    }
+
+    [data-theme="dark"] { 
+      background: linear-gradient(135deg,var(--bg-primary) 0%, #111827 100%);
+      color: #e6eef6;
+      min-height:100vh;
+    }
+
+    /* Glass card base */
+    .glass-card {
+      background: var(--glass);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      transition: all .22s ease;
+    }
+    .glass-card:hover { box-shadow: 0 8px 30px rgba(59,130,246,0.08); transform: translateY(-3px); }
+
+    /* small niceties for inputs inside cards */
+    .card-input {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.06);
+      color: inherit;
+      padding: .5rem .625rem;
+      border-radius: .5rem;
+      width:100%;
+      outline: none;
+      transition: border-color .16s;
+    }
+    .card-input:focus { border-color: var(--accent-blue); box-shadow: 0 4px 18px rgba(59,130,246,0.06); }
+
+    /* Miss penalty input style */
+    .miss-penalty {
+      padding: .45rem .6rem;
+      border-radius: .5rem;
+      border:1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      width:100%;
+    }
+
+    /* Timer status left accent */
+    .status-running { border-left: 4px solid var(--accent-green); }
+    .status-today   { border-left: 4px solid var(--accent-blue); }
+    .status-expired { border-left: 4px solid #ef4444; opacity: .95; }
+
+    /* small responsive tweaks */
+    @media (max-width: 640px) {
+      .grid-cols-responsive { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    }
+
+    /* Send panel fixed bottom nicer */
+    #sendPanel { z-index: 60; }
+  </style>
 </head>
-<body>
+<body class="antialiased" data-theme="dark">
 
-<!-- User Info Modal -->
-<div id="userModal">
-  <div id="userModalContent">
-    <h3>Enter Your Info</h3>
-    <input id="modalIGN" type="text" placeholder="IGN">
-    <input id="modalGuild" type="text" placeholder="Guild">
-    <button id="modalSubmit">Submit</button>
-  </div>
-</div>
-
-<div class="container" id="mainContent" style="display:none">
-  <header>
-    <div class="header-left">
-      <strong>L9Boss Timers</strong>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="restartAll">Restart All</button>
-        <button id="stopAll" class="ghost">Stop All</button>
-        <button id="sendTimers">Send Timers</button>
-        <button id="switchWebhook" class="ghost">Webhook: —</button>
-        <button id="toggleTheme" class="ghost">Toggle Theme</button>
+  <!-- App header (glass) -->
+  <header class="glass-card px-4 py-3 container mx-auto flex items-center justify-between gap-4 mt-6">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 shadow">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="10"></circle></svg>
+      </div>
+      <div>
+        <div class="text-lg font-semibold">L9Boss Timers</div>
+        <div class="text-sm text-[color:var(--muted)]">Shared timers • Manual & Scheduled</div>
       </div>
     </div>
-    <div class="header-right">
-      <div id="userInfo" class="user-badge">IGN: — | Guild: —</div>
-      <button id="changeUser" class="ghost">Change</button>
+
+    <div class="flex items-center gap-2">
+      <button id="restartAll" class="btn-primary hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-br from-green-400 to-green-600 text-white text-sm">Restart All</button>
+      <button id="stopAll" class="px-3 py-1.5 rounded-lg border border-[color:var(--glass-border)] text-sm text-[color:var(--muted)]">Stop All</button>
+      <button id="sendTimers" class="px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.03)] text-sm">Send Timers</button>
+      <button id="switchWebhook" class="px-3 py-1.5 rounded-lg border border-[color:var(--glass-border)] text-sm">Webhook: —</button>
+      <button id="toggleTheme" class="px-3 py-1.5 rounded-lg border border-[color:var(--glass-border)] text-sm">Toggle</button>
+
+      <div class="ml-2 text-sm text-[color:var(--muted)]" id="userInfo">IGN: — | Guild: —</div>
+      <button id="changeUser" class="ml-2 px-2 py-1 rounded bg-[rgba(255,255,255,0.03)] text-[color:var(--muted)]">Change</button>
     </div>
   </header>
 
-<main>
-  <section>
-    <h2>Manual Boss Timers</h2>
-    <div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap">
-      <input id="manualName" type="text" placeholder="Boss Name">
-      <input id="manualHours" type="number" placeholder="Hours">
-      <button id="addManual">Add Manual Timer</button>
+  <!-- Main container -->
+  <main class="container mx-auto px-4 py-6 space-y-6">
+
+    <!-- Top status / small info -->
+    <div class="glass-card px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+        <div class="text-sm text-[color:var(--muted)]">Online — synchronized timers active</div>
+      </div>
+      <div class="text-sm text-[color:var(--muted)]">Local time: <span id="localTime">--:--</span></div>
     </div>
-    <div id="manualBossGrid" class="timer-grid"></div>
-  </section>
 
-  <section>
-    <h2>Scheduled Bosses</h2>
-    <div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap">
-      <input id="schedName" type="text" placeholder="Boss Name">
-      <input id="schedTime" type="text" placeholder="Schedule e.g. mon 12:30,tue 15:00">
-      <button id="addScheduled">Add Scheduled Boss</button>
+    <!-- Manual Timers -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold flex items-center gap-2"><svg class="w-5 h-5 text-[color:var(--accent-blue)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg> Manual Boss Timers</h2>
+        <div class="flex items-center gap-2">
+          <input id="manualName" class="card-input w-44" type="text" placeholder="Boss Name">
+          <input id="manualHours" class="card-input w-28" type="number" placeholder="Hours">
+          <button id="addManual" class="px-3 py-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-sm flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add</button>
+        </div>
+      </div>
+
+      <div id="manualBossGrid" class="grid gap-4 grid-cols-3 grid-cols-responsive">
+        <!-- Cards are injected here by main.js; they should be given .glass-card, .card, and proper IDs -->
+      </div>
+    </section>
+
+    <!-- Scheduled Timers -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold flex items-center gap-2"><svg class="w-5 h-5 text-[color:var(--accent-blue)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z"/></svg> Scheduled Bosses</h2>
+        <div class="flex items-center gap-2">
+          <input id="schedName" class="card-input w-44" type="text" placeholder="Boss Name">
+          <input id="schedTime" class="card-input w-56" type="text" placeholder="Schedule e.g. mon 12:30,tue 15:00">
+          <button id="addScheduled" class="px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[color:var(--glass-border)] text-sm">Add</button>
+        </div>
+      </div>
+
+      <div id="scheduledBossGrid" class="grid gap-4 grid-cols-3 grid-cols-responsive">
+        <!-- Scheduled cards injected by main.js -->
+      </div>
+    </section>
+
+    <!-- Today's spawn + visitors row -->
+    <div class="grid grid-cols-3 gap-4">
+      <div class="glass-card p-4 col-span-2">
+        <h3 class="text-sm font-semibold mb-2">Today's Boss Spawn</h3>
+        <div id="todaysBosses" class="space-y-2 text-[color:var(--muted)]">Loading...</div>
+      </div>
+
+      <div class="glass-card p-4">
+        <h3 class="text-sm font-semibold mb-2">Recent Visitors (last 10 min)</h3>
+        <div id="visitorLog" class="text-[color:var(--muted)] text-sm">Loading...</div>
+      </div>
     </div>
-    <div id="scheduledBossGrid" class="timer-grid"></div>
-  </section>
 
-  <section>
-    <h2>Today's Boss Spawn</h2>
-    <div id="todaysBosses">Loading...</div>
-  </section>
+  </main>
 
-  <section>
-    <h2>Recent Visitors (last 10 min)</h2>
-    <div id="visitorLog">Loading...</div>
-  </section>
-</main>
-</div>
+  <!-- Send Panel (fixed bottom) -->
+  <div id="sendPanel" class="fixed left-0 right-0 bottom-4 px-4">
+    <div class="glass-card p-3 flex items-start justify-between gap-4">
+      <div class="w-full">
+        <div class="flex items-center justify-between">
+          <div class="font-semibold">📤 Send Selected Timers</div>
+          <div class="text-sm text-[color:var(--muted)] cursor-pointer" id="toggleSendPanel">▲</div>
+        </div>
 
-<!-- Collapsible Send Panel -->
-<div id="sendPanel">
-  <div id="sendPanelHeader" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
-    <strong>📤 Send Selected Timers</strong>
-    <span id="toggleSendPanel" style="font-weight:700;cursor:pointer;">▲</span>
+        <div id="sendPanelContent" class="mt-3 max-h-48 overflow-auto">
+          <div id="sendPanelTimers" class="flex flex-col gap-2 text-sm text-[color:var(--muted)]">
+            <!-- dynamically injected checkboxes -->
+          </div>
+
+          <textarea id="customMessage" class="card-input mt-3" placeholder="Optional message..." rows="2"></textarea>
+
+          <div class="mt-3 flex gap-2">
+            <button id="sendSelected" class="px-4 py-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">Send Selected</button>
+            <button id="sendTimersClear" class="px-4 py-2 rounded-lg border border-[color:var(--glass-border)] text-[color:var(--muted)]">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="sendPanelContent" style="margin-top:10px;max-height:250px;overflow-y:auto;">
-    <div id="sendPanelTimers" style="display:flex;flex-direction:column;gap:6px;"></div>
-    <textarea id="customMessage" placeholder="Optional message..."></textarea>
-    <button id="sendSelected">Send Selected</button>
+
+  <!-- User Info Modal (keeps ids for modal.js) -->
+  <div id="userModal" class="fixed inset-0 flex items-center justify-center modal-backdrop hidden">
+    <div id="userModalContent" class="glass-card p-6 w-96">
+      <div class="swipe-indicator"></div>
+      <h3 class="text-lg font-semibold mb-4">Enter Your Info</h3>
+      <input id="modalIGN" type="text" class="card-input mb-3" placeholder="IGN" />
+      <input id="modalGuild" type="text" class="card-input mb-3" placeholder="Guild" />
+      <button id="modalSubmit" class="w-full px-4 py-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">Submit</button>
+    </div>
   </div>
-</div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="main.js"></script>
+  <!-- Toast (simple) -->
+  <div id="toast" class="fixed left-1/2 transform -translate-x-1/2 bottom-8 hidden glass-card px-4 py-2 rounded-lg">
+    <div id="toastMessage" class="text-sm text-[color:var(--muted)]"></div>
+  </div>
 
+  <!-- Firebase & app scripts (keep order) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- Your app scripts (modal.js should handle showing/hiding #userModal and main.js will populate cards) -->
+  <script src="modal.js"></script>
+  <script src="main.js"></script>
+
+  <script>
+    // feather icons replace
+    if(typeof feather !== 'undefined') feather.replace();
+
+    // small helper: toggle modal visibility if needed by older modal.js
+    (function(){
+      // show userModal if .hidden removed by modal.js - keep compatibility
+      const userModal = document.getElementById('userModal');
+      if(userModal && !userModal.classList.contains('hidden')) userModal.classList.remove('hidden');
+      // update local time display
+      function updateLocalTime(){ 
+        const el = document.getElementById('localTime'); 
+        if(el) el.textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); 
+      }
+      updateLocalTime(); setInterval(updateLocalTime, 60000);
+    })();
+  </script>
 </body>
 </html>
