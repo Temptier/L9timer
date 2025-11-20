@@ -1,275 +1,310 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>L9Boss Timers Dashboard</title>
-<style>
-:root {
-  --bg: #0d1117;
-  --fg: #e6edf3;
-  --accent: #58a6ff;
-  --card-bg: #161b22;
-  --expired: #f85149;
-  --warn: #f0c443;
-  --success: #2ecc71;
-  --hover: rgba(88,166,255,0.2);
-}
-
-body.light {
-  --bg: #f8f8f8;
-  --fg: #111;
-  --accent: #007777;
-  --card-bg: #fff;
-}
-
-body {
-  background: var(--bg);
-  color: var(--fg);
-  font-family: 'Inter', system-ui, monospace;
-  margin: 0;
-}
-
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
-}
-
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: var(--card-bg);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.header-left, .header-right {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-button {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-button:hover {
-  background: rgba(88,166,255,0.8);
-}
-
-button.ghost {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: var(--fg);
-}
-
-.user-badge {
-  font-size: 0.95rem;
-  opacity: 0.9;
-}
-
-main {
-  padding: 8px 0;
-}
-
-h2 {
-  color: var(--accent);
-  margin: 12px 0;
-  font-size: 1.25rem;
-}
-
-.timer-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 12px;
-}
-
-.card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 14px 16px;
-  border: 1px solid rgba(255,255,255,0.05);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-  transition: all 0.25s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.6);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.label {
-  font-weight: 700;
-  font-size: 1rem;
-}
-
-.clock {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 8px 0;
-}
-
-.datetime {
-  font-size: 0.85rem;
-  color: var(--accent);
-  margin-bottom: 6px;
-}
-
-.small {
-  font-size: 0.85rem;
-  color: rgba(255,255,255,0.7);
-  margin-bottom: 4px;
-}
-
-.card-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.status-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
-  transition: all 0.3s ease;
-}
-
-.status-dot.running {
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
-}
-
-.status-dot.warning {
-  background: var(--warn);
-  box-shadow: 0 0 10px var(--warn);
-}
-
-.status-dot.expired {
-  background: var(--expired);
-  box-shadow: 0 0 12px var(--expired);
-}
-
-.timer-ended {
-  border-color: var(--success);
-  box-shadow: 0 0 12px var(--success);
-}
-
-.warning {
-  border-color: var(--warn);
-  box-shadow: 0 0 10px var(--warn);
-}
-
-input[type="text"], input[type="number"], textarea {
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: transparent;
-  color: var(--fg);
-  width: 100%;
-  transition: all 0.2s ease;
-}
-
-input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
-  outline: none;
-}
-
-#visitorLog, #todaysBosses {
-  background: var(--card-bg);
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.05);
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-@media(max-width:600px) {
-  header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .header-left, .header-right {
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
-  .clock {
-    font-size: 1.25rem;
-  }
-  .datetime, .small {
-    font-size: 0.75rem;
-  }
-}
-</style>
-</head>
-<body>
-
-<!-- User Info Modal -->
-<div id="userModal">
-  <div id="userModalContent">
-    <h3>Enter Your Info</h3>
-    <input id="modalIGN" type="text" placeholder="IGN">
-    <input id="modalGuild" type="text" placeholder="Guild">
-    <button id="modalSubmit">Submit</button>
-  </div>
-</div>
-
-<div class="container" id="mainContent" style="display:none">
-  <header>
-    <div class="header-left">
-      <strong>L9Boss Timers</strong>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button id="restartAll">Restart All</button>
-        <button id="stopAll" class="ghost">Stop All</button>
-        <button id="sendTimers">Send Timers</button>
-        <button id="switchWebhook" class="ghost">Webhook: —</button>
-        <button id="toggleTheme" class="ghost">Toggle Theme</button>
-      </div>
-    </div>
-    <div class="header-right">
-      <div id="userInfo" class="user-badge">IGN: — | Guild: —</div>
-      <button id="changeUser" class="ghost">Change</button>
-    </div>
-  </header>
-
-</main>
-
-<!-- User Modal -->
-<div id="userModal">
-  <div class="modal-content">
-    <h3>User Info</h3>
-    <input id="modalIGN" placeholder="In-Game Name">
-    <input id="modalGuild" placeholder="Guild">
-    <button id="modalSubmit">Save</button>
-  </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-<script src="main.js"></script>
-</body>
+<html lang="en">  
+<head>  
+<meta charset="utf-8">  
+<meta name="viewport" content="width=device-width,initial-scale=1">  
+<title>L9Boss Timers Dashboard</title>  
+<style>  
+:root {  
+  --bg: #0d1117;  
+  --fg: #e6edf3;  
+  --accent: #58a6ff;  
+  --card-bg: #161b22;  
+  --expired: #f85149;  
+  --warn: #f0c443;  
+  --success: #2ecc71;  
+  --hover: rgba(88,166,255,0.2);  
+}  
+  
+body.light {  
+  --bg: #f8f8f8;  
+  --fg: #111;  
+  --accent: #007777;  
+  --card-bg: #fff;  
+}  
+  
+body {  
+  background: var(--bg);  
+  color: var(--fg);  
+  font-family: 'Inter', system-ui, monospace;  
+  margin: 0;  
+}  
+  
+.container {  
+  max-width: 1100px;  
+  margin: 0 auto;  
+  padding: 16px;  
+}  
+  
+header {  
+  display: flex;  
+  justify-content: space-between;  
+  align-items: center;  
+  padding: 12px 16px;  
+  background: var(--card-bg);  
+  border-bottom: 1px solid rgba(255,255,255,0.05);  
+  border-radius: 8px;  
+  margin-bottom: 16px;  
+}  
+  
+.header-left, .header-right {  
+  display: flex;  
+  gap: 12px;  
+  align-items: center;  
+  flex-wrap: wrap;  
+}  
+  
+button {  
+  background: var(--accent);  
+  color: #fff;  
+  border: none;  
+  padding: 8px 14px;  
+  border-radius: 8px;  
+  cursor: pointer;  
+  font-weight: 600;  
+  transition: all 0.2s ease;  
+}  
+  
+button:hover {  
+  background: rgba(88,166,255,0.8);  
+}  
+  
+button.ghost {  
+  background: transparent;  
+  border: 1px solid rgba(255,255,255,0.15);  
+  color: var(--fg);  
+}  
+  
+.user-badge {  
+  font-size: 0.95rem;  
+  opacity: 0.9;  
+}  
+  
+main {  
+  padding: 8px 0;  
+}  
+  
+h2 {  
+  color: var(--accent);  
+  margin: 12px 0;  
+  font-size: 1.25rem;  
+}  
+  
+.timer-grid {  
+  display: grid;  
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));  
+  gap: 16px;  
+  margin-top: 12px;  
+}  
+  
+.card {  
+  background: var(--card-bg);  
+  border-radius: 12px;  
+  padding: 14px 16px;  
+  border: 1px solid rgba(255,255,255,0.05);  
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);  
+  transition: all 0.25s ease;  
+  position: relative;  
+  overflow: hidden;  
+}  
+  
+.card:hover {  
+  transform: translateY(-3px);  
+  box-shadow: 0 8px 28px rgba(0,0,0,0.6);  
+}  
+  
+.card-header {  
+  display: flex;  
+  justify-content: space-between;  
+  align-items: center;  
+}  
+  
+.label {  
+  font-weight: 700;  
+  font-size: 1rem;  
+}  
+  
+.clock {  
+  font-size: 1.5rem;  
+  font-weight: 700;  
+  margin: 8px 0;  
+}  
+  
+.datetime {  
+  font-size: 0.85rem;  
+  color: var(--accent);  
+  margin-bottom: 6px;  
+}  
+  
+.small {  
+  font-size: 0.85rem;  
+  color: rgba(255,255,255,0.7);  
+  margin-bottom: 4px;  
+}  
+  
+.card-actions {  
+  display: flex;  
+  gap: 8px;  
+  flex-wrap: wrap;  
+  margin-top: 8px;  
+}  
+  
+.status-dot {  
+  width: 14px;  
+  height: 14px;  
+  border-radius: 50%;  
+  background: var(--accent);  
+  box-shadow: 0 0 6px var(--accent);  
+  transition: all 0.3s ease;  
+}  
+  
+.status-dot.running {  
+  background: var(--accent);  
+  box-shadow: 0 0 8px var(--accent);  
+}  
+  
+.status-dot.warning {  
+  background: var(--warn);  
+  box-shadow: 0 0 10px var(--warn);  
+}  
+  
+.status-dot.expired {  
+  background: var(--expired);  
+  box-shadow: 0 0 12px var(--expired);  
+}  
+  
+.timer-ended {  
+  border-color: var(--success);  
+  box-shadow: 0 0 12px var(--success);  
+}  
+  
+.warning {  
+  border-color: var(--warn);  
+  box-shadow: 0 0 10px var(--warn);  
+}  
+  
+input[type="text"], input[type="number"], textarea {  
+  padding: 8px;  
+  border-radius: 8px;  
+  border: 1px solid rgba(255,255,255,0.1);  
+  background: transparent;  
+  color: var(--fg);  
+  width: 100%;  
+  transition: all 0.2s ease;  
+}  
+  
+input[type="text"]:focus, input[type="number"]:focus, textarea:focus {  
+  border-color: var(--accent);  
+  box-shadow: 0 0 6px var(--accent);  
+  outline: none;  
+}  
+  
+#visitorLog, #todaysBosses {  
+  background: var(--card-bg);  
+  padding: 12px;  
+  border-radius: 10px;  
+  border: 1px solid rgba(255,255,255,0.05);  
+  max-height: 200px;  
+  overflow-y: auto;  
+}  
+  
+@media(max-width:600px) {  
+  header {  
+    flex-direction: column;  
+    align-items: stretch;  
+  }  
+  .header-left, .header-right {  
+    justify-content: space-between;  
+    margin-bottom: 8px;  
+  }  
+  .clock {  
+    font-size: 1.25rem;  
+  }  
+  .datetime, .small {  
+    font-size: 0.75rem;  
+  }  
+}  
+</style>  
+</head>  
+<body>  
+  
+<!-- User Info Modal -->  
+<div id="userModal">  
+  <div id="userModalContent">  
+    <h3>Enter Your Info</h3>  
+    <input id="modalIGN" type="text" placeholder="IGN">  
+    <input id="modalGuild" type="text" placeholder="Guild">  
+    <button id="modalSubmit">Submit</button>  
+  </div>  
+</div>  
+  
+<div class="container" id="mainContent" style="display:none">  
+  <header>  
+    <div class="header-left">  
+      <strong>L9Boss Timers</strong>  
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">  
+        <button id="restartAll">Restart All</button>  
+        <button id="stopAll" class="ghost">Stop All</button>  
+        <button id="sendTimers">Send Timers</button>  
+        <button id="switchWebhook" class="ghost">Webhook: —</button>  
+        <button id="toggleTheme" class="ghost">Toggle Theme</button>  
+      </div>  
+    </div>  
+    <div class="header-right">  
+      <div id="userInfo" class="user-badge">IGN: — | Guild: —</div>  
+      <button id="changeUser" class="ghost">Change</button>  
+    </div>  
+  </header>  
+  
+<main>  
+  
+<section>  
+    <h2>Today's Boss Spawn</h2>  
+    <div id="todaysBosses">Loading...</div>  
+  </section>  
+  
+  <section>  
+    <h2>Manual Boss Timers</h2>  
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">  
+      <input id="manualName" type="text" placeholder="Boss Name">  
+      <input id="manualHours" type="number" placeholder="Hours">  
+      <button id="addManual">Add Manual Timer</button>  
+    </div>  
+    <div id="manualBossGrid" class="timer-grid"></div>  
+  </section>  
+  
+  <section>  
+    <h2>Scheduled Bosses</h2>  
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">  
+      <input id="schedName" type="text" placeholder="Boss Name">  
+      <input id="schedTime" type="text" placeholder="Schedule e.g. mon 12:30,tue 15:00">  
+      <button id="addScheduled">Add Scheduled Boss</button>  
+    </div>  
+    <div id="scheduledBossGrid" class="timer-grid"></div>  
+  </section>  
+  
+  
+  <section>  
+    <h2>Recent Visitors (last 10 min)</h2>  
+    <div id="visitorLog">Loading...</div>  
+  </section>  
+</main>  
+</div>  
+  
+<!-- Collapsible Send Panel -->  
+<div id="sendPanel">  
+  <div id="sendPanelHeader" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">  
+    <strong>📤 Send Selected Timers</strong>  
+    <span id="toggleSendPanel">▲</span>  
+  </div>  
+  <div id="sendPanelContent">  
+    <div id="sendPanelTimers"></div>  
+    <textarea id="customMessage" placeholder="Optional message..."></textarea>  
+    <button id="sendSelected">Send Selected</button>  
+  </div>  
+</div>  
+  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>  
+<script src="main.js"></script>  
+</body>  
 </html>
