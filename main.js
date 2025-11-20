@@ -1,4 +1,4 @@
-// main.js — fixed, unified, ready to paste  
+// main.js — fixed, unified, ready to paste   
 document.addEventListener("DOMContentLoaded", () => {  
   
 /* ---------- Firebase Setup ---------- */  
