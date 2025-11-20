@@ -658,17 +658,22 @@ function renderTodaysBosses(){
   todaysPanel.innerHTML = '';
   const todayStr = new Date().toDateString();
 
+  const todayBosses = []; // collect today's spawns
+
   Object.values(bossMap).forEach(b=>{
     // Manual running end
     if(b.manual && startTimes[b.manual.id] && startTimes[b.manual.id].startedAt){
       const endDate = new Date(startTimes[b.manual.id].startedAt + b.manual.hours*3600*1000);
       if(endDate.toDateString() === todayStr){
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `<div class="label">${b.label}</div><div class="small">Type: Manual</div><div class="small">Ends: ${endDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>`;
-        todaysPanel.appendChild(div);
+        todayBosses.push({
+          type: 'Manual',
+          label: b.label,
+          time: endDate,
+          html: `<div class="label">${b.label}</div><div class="small">Type: Manual</div><div class="small">Ends: ${endDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>`
+        });
       }
     }
+
     // Scheduled occurrences for today
     if(b.scheduled){
       b.scheduled.schedule.split(',').forEach(s=>{
@@ -676,16 +681,29 @@ function renderTodaysBosses(){
         const nextOcc = getNextOccurrence(day,time);
         const occDate = new Date(nextOcc);
         if(occDate.toDateString() === todayStr){
-          const div = document.createElement('div');
-          div.className = 'card';
-          div.innerHTML = `<div class="label">${b.label}</div><div class="small">Type: Scheduled</div><div class="small">At: ${occDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>`;
-          todaysPanel.appendChild(div);
+          todayBosses.push({
+            type: 'Scheduled',
+            label: b.label,
+            time: occDate,
+            html: `<div class="label">${b.label}</div><div class="small">Type: Scheduled</div><div class="small">At: ${occDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>`
+          });
         }
       });
     }
   });
 
-  if(todaysPanel.children.length === 0) todaysPanel.textContent = 'No spawns today.';
+  // Sort by time
+  todayBosses.sort((a,b) => a.time - b.time);
+
+  // Render
+  todayBosses.forEach(b => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = b.html;
+    todaysPanel.appendChild(div);
+  });
+
+  if(todayBosses.length === 0) todaysPanel.textContent = 'No spawns today.';
 }
 
 /* ---------- Send Panel (refresh + send) ---------- */
