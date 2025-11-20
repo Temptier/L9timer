@@ -5,17 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
   <title>Boss Timers — Manual & Scheduled</title>
 
-  <!-- Tailwind CDN (utility-first) -->
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Feather icons -->
   <script src="https://unpkg.com/feather-icons"></script>
 
   <style>
-    /* Custom theme tokens to coexist with Tailwind */
     :root{
-      --bg-primary: #0f172a;    /* page bg */
-      --glass: rgba(30,41,59,0.52);
+      --bg-primary: #0f172a;
+      --glass: rgba(30,41,59,0.55);
       --glass-border: rgba(148,163,184,0.08);
       --accent-blue: #3b82f6;
       --accent-green: #10b981;
@@ -29,18 +28,16 @@
       min-height:100vh;
     }
 
-    /* Glass card base */
     .glass-card {
       background: var(--glass);
-      -webkit-backdrop-filter: blur(8px);
       backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border: 1px solid var(--glass-border);
       border-radius: 12px;
       transition: all .22s ease;
     }
     .glass-card:hover { box-shadow: 0 8px 30px rgba(59,130,246,0.08); transform: translateY(-3px); }
 
-    /* small niceties for inputs inside cards */
     .card-input {
       background: transparent;
       border: 1px solid rgba(255,255,255,0.06);
@@ -53,32 +50,53 @@
     }
     .card-input:focus { border-color: var(--accent-blue); box-shadow: 0 4px 18px rgba(59,130,246,0.06); }
 
-    /* Miss penalty input style */
-    .miss-penalty {
-      padding: .45rem .6rem;
-      border-radius: .5rem;
-      border:1px solid rgba(255,255,255,0.06);
-      background: rgba(255,255,255,0.02);
-      width:100%;
+    /* ==== PROFESSIONAL TIMER CARD ==== */
+    .timer-card {
+      background: rgba(30,41,59,0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 1rem 1.25rem;
+      transition: all .22s ease;
+      position: relative;
+      overflow: hidden;
     }
+    .timer-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(to bottom, #3b82f6, #6366f1);
+      opacity: .9;
+      border-radius: 4px;
+    }
+    .timer-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 35px rgba(0,0,0,0.35);
+      border-color: rgba(255,255,255,0.16);
+    }
+    .timer-title { font-size: 1.1rem; font-weight: 600; }
+    .timer-clock { font-size: 1.6rem; font-weight: 600; margin-top: .25rem; }
+    .timer-subtext { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+    .timer-actions { margin-top: 10px; display: flex; gap: .5rem; flex-wrap: wrap; }
+    .timer-btn { padding: .45rem .75rem; font-size: .75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); transition: .18s; }
+    .timer-btn:hover { border-color: rgba(255,255,255,0.25); }
+    .timer-btn-primary { background: linear-gradient(to right, #3b82f6, #6366f1); color: white !important; border: none; }
+    .timer-miss { margin-top: 6px; font-size: .8rem; }
+    .timer-miss input { margin-top: 3px; padding: .35rem .45rem; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); width: 100%; }
 
-    /* Timer status left accent */
-    .status-running { border-left: 4px solid var(--accent-green); }
-    .status-today   { border-left: 4px solid var(--accent-blue); }
-    .status-expired { border-left: 4px solid #ef4444; opacity: .95; }
-
-    /* small responsive tweaks */
+    /* Responsive */
     @media (max-width: 640px) {
       .grid-cols-responsive { grid-template-columns: repeat(1, minmax(0, 1fr)); }
     }
-
-    /* Send panel fixed bottom nicer */
-    #sendPanel { z-index: 60; }
   </style>
 </head>
 <body class="antialiased" data-theme="dark">
 
-  <!-- App header (glass) -->
+  <!-- Header -->
   <header class="glass-card px-4 py-3 container mx-auto flex items-center justify-between gap-4 mt-6">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 shadow">
@@ -91,21 +109,20 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <button id="restartAll" class="btn-primary hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-br from-green-400 to-green-600 text-white text-sm">Restart All</button>
+      <button id="restartAll" class="btn-primary hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm">Restart All</button>
       <button id="stopAll" class="px-3 py-1.5 rounded-lg border border-[color:var(--glass-border)] text-sm text-[color:var(--muted)]">Stop All</button>
       <button id="sendTimers" class="px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.03)] text-sm">Send Timers</button>
       <button id="switchWebhook" class="px-3 py-1.5 rounded-lg border border-[color:var(--glass-border)] text-sm">Webhook: —</button>
       <button id="toggleTheme" class="px-3 py-1.5 rounded-lg border border-[color:var(--glass-border)] text-sm">Toggle</button>
-
       <div class="ml-2 text-sm text-[color:var(--muted)]" id="userInfo">IGN: — | Guild: —</div>
       <button id="changeUser" class="ml-2 px-2 py-1 rounded bg-[rgba(255,255,255,0.03)] text-[color:var(--muted)]">Change</button>
     </div>
   </header>
 
-  <!-- Main container -->
+  <!-- Main -->
   <main class="container mx-auto px-4 py-6 space-y-6">
 
-    <!-- Top status / small info -->
+    <!-- Status -->
     <div class="glass-card px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
@@ -117,42 +134,39 @@
     <!-- Manual Timers -->
     <section class="space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold flex items-center gap-2"><svg class="w-5 h-5 text-[color:var(--accent-blue)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg> Manual Boss Timers</h2>
+        <h2 class="text-lg font-semibold flex items-center gap-2">Manual Boss Timers</h2>
         <div class="flex items-center gap-2">
           <input id="manualName" class="card-input w-44" type="text" placeholder="Boss Name">
           <input id="manualHours" class="card-input w-28" type="number" placeholder="Hours">
-          <button id="addManual" class="px-3 py-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-sm flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add</button>
+          <button id="addManual" class="px-3 py-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-sm">Add</button>
         </div>
       </div>
-
       <div id="manualBossGrid" class="grid gap-4 grid-cols-3 grid-cols-responsive">
-        <!-- Cards are injected here by main.js; they should be given .glass-card, .card, and proper IDs -->
+        <!-- Timer cards injected here -->
       </div>
     </section>
 
     <!-- Scheduled Timers -->
     <section class="space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold flex items-center gap-2"><svg class="w-5 h-5 text-[color:var(--accent-blue)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7H3v12a2 2 0 002 2z"/></svg> Scheduled Bosses</h2>
+        <h2 class="text-lg font-semibold flex items-center gap-2">Scheduled Bosses</h2>
         <div class="flex items-center gap-2">
           <input id="schedName" class="card-input w-44" type="text" placeholder="Boss Name">
           <input id="schedTime" class="card-input w-56" type="text" placeholder="Schedule e.g. mon 12:30,tue 15:00">
-          <button id="addScheduled" class="px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[color:var(--glass-border)] text-sm">Add</button>
+          <button id="addScheduled" class="px-3 py-1.5 rounded-lg border border-[color:var(--glass-border)] text-sm">Add</button>
         </div>
       </div>
-
       <div id="scheduledBossGrid" class="grid gap-4 grid-cols-3 grid-cols-responsive">
-        <!-- Scheduled cards injected by main.js -->
+        <!-- Scheduled cards injected -->
       </div>
     </section>
 
-    <!-- Today's spawn + visitors row -->
+    <!-- Today + Visitors -->
     <div class="grid grid-cols-3 gap-4">
       <div class="glass-card p-4 col-span-2">
         <h3 class="text-sm font-semibold mb-2">Today's Boss Spawn</h3>
         <div id="todaysBosses" class="space-y-2 text-[color:var(--muted)]">Loading...</div>
       </div>
-
       <div class="glass-card p-4">
         <h3 class="text-sm font-semibold mb-2">Recent Visitors (last 10 min)</h3>
         <div id="visitorLog" class="text-[color:var(--muted)] text-sm">Loading...</div>
@@ -161,7 +175,7 @@
 
   </main>
 
-  <!-- Send Panel (fixed bottom) -->
+  <!-- Send Panel -->
   <div id="sendPanel" class="fixed left-0 right-0 bottom-4 px-4">
     <div class="glass-card p-3 flex items-start justify-between gap-4">
       <div class="w-full">
@@ -169,14 +183,9 @@
           <div class="font-semibold">📤 Send Selected Timers</div>
           <div class="text-sm text-[color:var(--muted)] cursor-pointer" id="toggleSendPanel">▲</div>
         </div>
-
         <div id="sendPanelContent" class="mt-3 max-h-48 overflow-auto">
-          <div id="sendPanelTimers" class="flex flex-col gap-2 text-sm text-[color:var(--muted)]">
-            <!-- dynamically injected checkboxes -->
-          </div>
-
+          <div id="sendPanelTimers" class="flex flex-col gap-2 text-sm text-[color:var(--muted)]"></div>
           <textarea id="customMessage" class="card-input mt-3" placeholder="Optional message..." rows="2"></textarea>
-
           <div class="mt-3 flex gap-2">
             <button id="sendSelected" class="px-4 py-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">Send Selected</button>
             <button id="sendTimersClear" class="px-4 py-2 rounded-lg border border-[color:var(--glass-border)] text-[color:var(--muted)]">Clear</button>
@@ -186,7 +195,7 @@
     </div>
   </div>
 
-  <!-- User Info Modal (keeps ids for modal.js) -->
+  <!-- User Modal -->
   <div id="userModal" class="fixed inset-0 flex items-center justify-center modal-backdrop hidden">
     <div id="userModalContent" class="glass-card p-6 w-96">
       <div class="swipe-indicator"></div>
@@ -197,35 +206,24 @@
     </div>
   </div>
 
-  <!-- Toast (simple) -->
+  <!-- Toast -->
   <div id="toast" class="fixed left-1/2 transform -translate-x-1/2 bottom-8 hidden glass-card px-4 py-2 rounded-lg">
     <div id="toastMessage" class="text-sm text-[color:var(--muted)]"></div>
   </div>
 
-  <!-- Firebase & app scripts (keep order) -->
+  <!-- Firebase & App Scripts -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-  <!-- Your app scripts (modal.js should handle showing/hiding #userModal and main.js will populate cards) -->
   <script src="modal.js"></script>
   <script src="main.js"></script>
 
   <script>
-    // feather icons replace
     if(typeof feather !== 'undefined') feather.replace();
-
-    // small helper: toggle modal visibility if needed by older modal.js
-    (function(){
-      // show userModal if .hidden removed by modal.js - keep compatibility
-      const userModal = document.getElementById('userModal');
-      if(userModal && !userModal.classList.contains('hidden')) userModal.classList.remove('hidden');
-      // update local time display
-      function updateLocalTime(){ 
-        const el = document.getElementById('localTime'); 
-        if(el) el.textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); 
-      }
-      updateLocalTime(); setInterval(updateLocalTime, 60000);
-    })();
+    function updateLocalTime(){ 
+      const el = document.getElementById('localTime'); 
+      if(el) el.textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); 
+    }
+    updateLocalTime(); setInterval(updateLocalTime, 60000);
   </script>
 </body>
 </html>
