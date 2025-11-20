@@ -197,15 +197,17 @@ function createBossCard(b, isManual = true){
   `;
 
   // --- Add Miss Penalty input dynamically for manual bosses ---
-  if(isManual){
-    const missPenaltyDiv = document.createElement('div');
-    missPenaltyDiv.className = 'missPenaltyContainer';
-    missPenaltyDiv.innerHTML = `
-      <label>Miss Penalty (min): </label>
-      <input type="number" class="missPenaltyInput" min="0" value="${b.manual.missPenalty || 0}">
-    `;
-    card.appendChild(missPenaltyDiv);
-  }
+  // --- Add Miss Penalty input dynamically for manual bosses ---
+if(isManual){
+  const missPenaltyDiv = document.createElement('div');
+  missPenaltyDiv.className = 'missPenaltyContainer';
+  const currentMiss = b.manual.missPenalty ?? (missesCache[b.manual.id]?.missPenalty || 0);
+  missPenaltyDiv.innerHTML = `
+    <label>Miss Penalty (min): </label>
+    <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}" data-boss-id="${b.manual.id}">
+  `;
+  card.appendChild(missPenaltyDiv);
+}
 
   // apply guild restrictions early if known
   if(currentUser && currentUser.guild && currentUser.guild.toLowerCase() !== 'vesperial'){
@@ -302,18 +304,26 @@ function attachManualHandlers(){
 
     // --- Miss Penalty Input ---
     const missInput = card.querySelector('.missPenaltyInput');
-    if(missInput && !missInput.dataset.bound){
-      missInput.addEventListener('change', ()=>{
-        const value = parseInt(missInput.value, 10) || 0;
+if(missInput && !missInput.dataset.bound){
+  const bossId = missInput.dataset.bossId;
 
-        // store locally
-        manual.missPenalty = value;
+  // Update local + Firebase when input changes
+  missInput.addEventListener('change', () => {
+    const value = parseInt(missInput.value, 10) || 0;
+    const manual = bossMap[b.label].manual;
+    manual.missPenalty = value;
+    db.ref('misses/' + bossId + '/missPenalty').set(value).catch(()=>{});
+  });
 
-        // persist to Firebase
-        db.ref('misses/' + manual.id + '/missPenalty').set(value).catch(()=>{});
-      });
-      missInput.dataset.bound = '1';
-    }
+  // Live update when Firebase changes
+  db.ref('misses/' + bossId + '/missPenalty').on('value', snap => {
+    const val = snap.val() ?? 0;
+    if(parseInt(missInput.value,10) !== val) missInput.value = val;
+    bossMap[b.label].manual.missPenalty = val;
+  });
+
+  missInput.dataset.bound = '1';
+}
 
   });
 }
