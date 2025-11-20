@@ -196,43 +196,68 @@ function createBossCard(b, isManual = true){
     <div class="small lastBy"></div>
   `;
 
- // --- Inside createBossCard (manual bosses only) ---
-if(isManual){
-  const missPenaltyDiv = document.createElement('div');
-  missPenaltyDiv.className = 'missPenaltyContainer';
-  const currentMiss = b.manual.missPenalty ?? (missesCache[b.manual.id]?.missPenalty ?? 3); // default 3 min
-  missPenaltyDiv.innerHTML = `
-    <label>Miss Penalty (min): </label>
-    <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}" data-boss-id="${b.manual.id}">
-  `;
-  card.appendChild(missPenaltyDiv);
-}
-  // --- Inside attachManualHandlers, after creating card ---
-const missInput = card.querySelector('.missPenaltyInput');
-if(missInput && !missInput.dataset.bound){
-  const bossId = missInput.dataset.bossId;
+  /* ----------------------------------------------------
+     ADD MISS PENALTY INPUT (manual bosses only)
+  ---------------------------------------------------- */
+  if(isManual){
+    const missPenaltyDiv = document.createElement('div');
+    missPenaltyDiv.className = 'missPenaltyContainer';
 
-  // Update local + Firebase on change
-  missInput.addEventListener('change', () => {
-    const value = parseInt(missInput.value, 10) || 0;
-    const manual = bossMap[b.label].manual;
-    manual.missPenalty = value;
-    db.ref('misses/' + bossId + '/missPenalty').set(value).catch(err=>{
-      console.error('Failed to update miss penalty', err);
+    // load from boss → missesCache → fallback 3
+    const currentMiss =
+      b.manual.missPenalty ??
+      (missesCache[b.manual.id]?.missPenalty ?? 3);
+
+    missPenaltyDiv.innerHTML = `
+      <label>Miss Penalty (min): </label>
+      <input type="number"
+             class="missPenaltyInput"
+             min="0"
+             value="${currentMiss}"
+             data-boss-id="${b.manual.id}">
+    `;
+
+    card.appendChild(missPenaltyDiv);
+  }
+
+  /* ----------------------------------------------------
+     BIND EVENT — MUST BE INSIDE createBossCard
+     but OUTSIDE the HTML building block
+  ---------------------------------------------------- */
+  const missInput = card.querySelector('.missPenaltyInput');
+
+  if(missInput && !missInput.dataset.bound){
+    const bossId = missInput.dataset.bossId;
+
+    // When manually updated in UI
+    missInput.addEventListener('change', () => {
+      const value = parseInt(missInput.value, 10) || 0;
+
+      // Update local object
+      b.manual.missPenalty = value;
+
+      // Save to Firebase
+      db.ref('misses/' + bossId + '/missPenalty')
+        .set(value)
+        .catch(err => console.error('Failed to update missPenalty', err));
     });
-  });
 
-  // Live update if Firebase changes
-  db.ref('misses/' + bossId + '/missPenalty').on('value', snap => {
-    const val = snap.val() ?? 3; // default 3 min
-    if(parseInt(missInput.value,10) !== val) missInput.value = val;
-    bossMap[b.label].manual.missPenalty = val;
-  });
+    // Live Firebase sync (updates UI automatically)
+    db.ref('misses/' + bossId + '/missPenalty')
+      .on('value', snap => {
+        const val = snap.val() ?? 3;
+        if(parseInt(missInput.value, 10) !== val){
+          missInput.value = val;
+        }
+        b.manual.missPenalty = val; // sync local
+      });
 
-  missInput.dataset.bound = '1';
-}
+    missInput.dataset.bound = '1';
+  }
 
-  // apply guild restrictions early if known
+  /* ----------------------------------------------------
+     GUILD RESTRICTIONS
+  ---------------------------------------------------- */
   if(currentUser && currentUser.guild && currentUser.guild.toLowerCase() !== 'vesperial'){
     ['stopBtn','sendBtn'].forEach(cls=>{
       const btn = card.querySelector('.'+cls);
