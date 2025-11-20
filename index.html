@@ -106,7 +106,7 @@ input[type="text"],input[type="number"]{padding:8px;border-radius:8px;border:1px
 </div>
 
 <!-- Collapsible Send Panel -->
-<div id="sendPanel" style="position:none;bottom:0;left:0;right:0;background:var(--card-bg);border-top:1px solid rgba(255,255,255,0.1);padding:10px;box-shadow:0 -4px 12px rgba(0,0,0,0.4);z-index:9999;">
+<div id="sendPanel" style="position:fixed;bottom:0;left:0;right:0;background:var(--card-bg);border-top:1px solid rgba(255,255,255,0.1);padding:10px;box-shadow:0 -4px 12px rgba(0,0,0,0.4);z-index:9999;">
   <div id="sendPanelHeader" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
     <strong>📤 Send Selected Timers</strong>
     <span id="toggleSendPanel" style="font-weight:700;cursor:pointer;">▲</span>
@@ -121,8 +121,8 @@ input[type="text"],input[type="number"]{padding:8px;border-radius:8px;border:1px
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<!-- Main JS -->
-<script src="modal.js"></script>
+<!-- Scripts: modal.js first, then main.js -->
+
 <script src="main.js"></script>
 
 </body>
