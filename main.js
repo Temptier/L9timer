@@ -175,10 +175,11 @@ function createBossCard(b, isManual = true) {
   const schedules = b.scheduled ? b.scheduled.schedule.split(',').map(s => s.trim()) : [];
   const schedHtml = schedules.length ? `<div class="small">Schedule: ${schedules.join(', ')}</div>` : '';
 
-  // Status dot element
+  // --- Status Dot ---
   const statusDot = document.createElement('div');
-  statusDot.className = 'status-dot running'; // default running, update dynamically later
-
+  statusDot.className = 'status-dot running'; // default
+  statusDot.style.float = 'right';
+  
   // Card header
   const cardHeader = document.createElement('div');
   cardHeader.className = 'card-header';
@@ -238,7 +239,7 @@ function createBossCard(b, isManual = true) {
     card.appendChild(missPenaltyDiv);
   }
 
-  // Send timer button (always present)
+  // Send timer button
   const sendBtn = document.createElement('button');
   sendBtn.className = 'sendBtn';
   sendBtn.textContent = 'Send Timer';
@@ -253,26 +254,20 @@ function createBossCard(b, isManual = true) {
     card.appendChild(schedDiv);
   }
 
-  // --- Attach missPenalty event listeners ---
+  // --- Miss penalty events ---
   const missInput = card.querySelector('.missPenaltyInput');
   if (missInput && !missInput.dataset.bound) {
     const bossId = missInput.dataset.bossId;
-
     missInput.addEventListener('change', () => {
       const value = parseInt(missInput.value, 10) || 0;
-      const manual = bossMap[b.label].manual;
-      manual.missPenalty = value;
-      db.ref('misses/' + bossId + '/missPenalty').set(value).catch(err => {
-        console.error('Failed to update miss penalty', err);
-      });
+      bossMap[b.label].manual.missPenalty = value;
+      db.ref('misses/' + bossId + '/missPenalty').set(value).catch(err => console.error(err));
     });
-
     db.ref('misses/' + bossId + '/missPenalty').on('value', snap => {
       const val = snap.val() ?? 3;
       if (parseInt(missInput.value, 10) !== val) missInput.value = val;
       bossMap[b.label].manual.missPenalty = val;
     });
-
     missInput.dataset.bound = '1';
   }
 
@@ -283,6 +278,56 @@ function createBossCard(b, isManual = true) {
       if (btn) btn.style.display = 'none';
     });
   }
+
+  // --- Dynamic clock & status ---
+  function updateClock() {
+    const now = new Date();
+    let endTime;
+    if (isManual) {
+      endTime = new Date(b.manual.startTime);
+      endTime.setHours(endTime.getHours() + manualHours);
+    } else {
+      // pick next scheduled time today
+      const nextSchedule = schedules.find(s => {
+        const [day, time] = s.split(' ');
+        const [h, m] = time.split(':').map(Number);
+        const d = new Date();
+        const dayNames = ['sun','mon','tue','wed','thu','fri','sat'];
+        if (d.getDay() !== dayNames.indexOf(day.toLowerCase())) return false;
+        d.setHours(h, m, 0, 0);
+        return d > now;
+      });
+      if (nextSchedule) {
+        const [day, time] = nextSchedule.split(' ');
+        const [h, m] = time.split(':').map(Number);
+        endTime = new Date();
+        endTime.setHours(h, m, 0, 0);
+      } else {
+        endTime = now;
+      }
+    }
+
+    const diff = Math.max(0, Math.floor((endTime - now) / 1000));
+    const h = String(Math.floor(diff / 3600)).padStart(2,'0');
+    const m = String(Math.floor((diff % 3600)/60)).padStart(2,'0');
+    const s = String(diff % 60).padStart(2,'0');
+    clockDiv.textContent = `${h}:${m}:${s}`;
+
+    // Status dot colors
+    if (diff === 0) {
+      statusDot.className = 'status-dot expired';
+      card.classList.add('timer-ended');
+    } else if (diff <= 600) { // less than 10 min
+      statusDot.className = 'status-dot warning';
+      card.classList.add('warning');
+    } else {
+      statusDot.className = 'status-dot running';
+      card.classList.remove('warning','timer-ended');
+    }
+  }
+
+  setInterval(updateClock, 1000);
+  updateClock(); // initial call
 
   return card;
 }
