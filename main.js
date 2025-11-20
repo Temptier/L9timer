@@ -477,11 +477,18 @@ function updateBossClocks(){
           // Iterative calculation for end time with miss penalties
           let end = new Date(data.startedAt);
           const baseMs = b.manual.hours * 3600 * 1000;
-          for(let i = 0; i < (miss.missCount || 0); i++){
-            end = new Date(end.getTime() + baseMs + ((b.manual.missPenalty || 0) * 60000));
-          }
-          // Add base hours for current run
-          end = new Date(end.getTime() + baseMs);
+          // Start from original start
+let end = new Date(data.startedAt);
+const baseMs = b.manual.hours * 3600 * 1000;
+const penaltyMs = (b.manual.missPenalty || 0) * 60000;
+
+// Add base + penalty for each miss
+for(let i = 0; i < (miss.missCount || 0); i++){
+  end = new Date(end.getTime() + baseMs + penaltyMs);
+}
+
+// Add base hours for current run
+end = new Date(end.getTime() + baseMs);
 
           remaining = Math.floor((end - now)/1000);
 
