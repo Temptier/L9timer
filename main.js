@@ -454,6 +454,7 @@ async function computeManualSendTime(manual){
 /* ---------- updateBossClocks (fixed data var, scheduling logic) ---------- */
 function updateBossClocks(){
   const now = Date.now();
+
   ['manualBossGrid','scheduledBossGrid'].forEach(gridId=>{
     document.querySelectorAll(`#${gridId} .card`).forEach(card=>{
       const label = card.dataset.label;
@@ -462,66 +463,65 @@ function updateBossClocks(){
 
       const clockEl = card.querySelector('.clock');
       const datetimeEl = card.querySelector('.datetime');
-      const endTimeEl = card.querySelector('.endtime');
       const missCountEl = card.querySelector('.missCount');
       const lastByEl = card.querySelector('.lastBy');
 
       let remaining = null;
 
-     // Manual timers
-if(b.manual){
-  const data = startTimes[b.manual.id] || null;
-  const miss = missesCache[b.manual.id] || { missCount: 0, missPenalty: 0 }; // get miss count & penalty
+      // --- Manual timers ---
+      if(b.manual){
+        const data = startTimes[b.manual.id] || null;
+        const miss = missesCache[b.manual.id] || { missCount: 0, missPenalty: b.manual.missPenalty || 0 };
 
-  if(data && data.startedAt){
-    // Iterative calculation for end time with miss penalties
-    let end = new Date(data.startedAt);
-    const baseMs = b.manual.hours * 3600 * 1000;
-    for(let i = 0; i < (miss.missCount || 0); i++){
-  end = new Date(end.getTime() + baseMs + ((b.manual.missPenalty || 0) * 60000));
-}
-    // Add base hours for current run
-    end = new Date(end.getTime() + baseMs);
+        if(data && data.startedAt){
+          // Iterative calculation for end time with miss penalties
+          let end = new Date(data.startedAt);
+          const baseMs = b.manual.hours * 3600 * 1000;
+          for(let i = 0; i < (miss.missCount || 0); i++){
+            end = new Date(end.getTime() + baseMs + ((b.manual.missPenalty || 0) * 60000));
+          }
+          // Add base hours for current run
+          end = new Date(end.getTime() + baseMs);
 
-    remaining = Math.floor((end - now)/1000);
+          remaining = Math.floor((end - now)/1000);
 
-    // 10-min notification
-    if(remaining <= 600 && remaining > 599 && !notified10Min[b.manual.id]){
-      sendBossDiscord(`@everyone⏰ **${b.label}** will spawn in 10 minutes!`);
-      notified10Min[b.manual.id] = true;
-    } else if(remaining > 600){
-      notified10Min[b.manual.id] = false;
-    }
+          // 10-min notification
+          if(remaining <= 600 && remaining > 599 && !notified10Min[b.manual.id]){
+            sendBossDiscord(`@everyone⏰ **${b.label}** will spawn in 10 minutes!`);
+            notified10Min[b.manual.id] = true;
+          } else if(remaining > 600){
+            notified10Min[b.manual.id] = false;
+          }
 
-    if(missCountEl) missCountEl.textContent = `Misses: ${miss.missCount || 0}`;
-    if(datetimeEl) datetimeEl.textContent = `Ends: ${formatDateForMsg(end.getTime())}`;
-    if(lastByEl) lastByEl.textContent = `Last restart: ${data.user || ''} [${data.guild || ''}]`;
-  } else {
-    // Not running — use nextMissTime if available
-    if(miss && miss.nextMissTime){
-      remaining = Math.floor((miss.nextMissTime - now)/1000);
-      const missKey = 'miss_'+b.manual.id;
-      if(remaining <= 600 && remaining > 599 && !notified10Min[missKey]){
-        sendBossDiscord(`@everyone⏰ **${b.label}** will spawn in 10 minutes!`);
-        notified10Min[missKey] = true;
-      } else if(remaining > 600){
-        notified10Min[missKey] = false;
+          if(missCountEl) missCountEl.textContent = `Misses: ${miss.missCount || 0}`;
+          if(datetimeEl) datetimeEl.textContent = `Ends: ${formatDateForMsg(end.getTime())}`;
+          if(lastByEl) lastByEl.textContent = `Last restart: ${data.user || ''} [${data.guild || ''}]`;
+        } else {
+          // Not running — use nextMissTime if available
+          if(miss && miss.nextMissTime){
+            remaining = Math.floor((miss.nextMissTime - now)/1000);
+            const missKey = 'miss_'+b.manual.id;
+            if(remaining <= 600 && remaining > 599 && !notified10Min[missKey]){
+              sendBossDiscord(`@everyone⏰ **${b.label}** will spawn in 10 minutes!`);
+              notified10Min[missKey] = true;
+            } else if(remaining > 600){
+              notified10Min[missKey] = false;
+            }
+            if(missCountEl) missCountEl.textContent = `Misses: ${miss.missCount || 0}`;
+            if(datetimeEl) datetimeEl.textContent = `Next spawn: ${new Date(miss.nextMissTime).toLocaleDateString(undefined,{weekday:'short'})} ${new Date(miss.nextMissTime).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}`;
+          } else {
+            remaining = b.manual.hours * 3600; // default full countdown (not running)
+            if(datetimeEl) datetimeEl.textContent = '';
+            if(missCountEl) missCountEl.textContent = '';
+          }
+        }
       }
-      if(missCountEl) missCountEl.textContent = `Misses: ${miss.missCount || 0}`;
-      if(datetimeEl) datetimeEl.textContent = `Next spawn: ${new Date(miss.nextMissTime).toLocaleDateString(undefined,{weekday:'short'})} ${new Date(miss.nextMissTime).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}`;
-    } else {
-      remaining = b.manual.hours * 3600; // default full countdown (not running)
-      if(datetimeEl) datetimeEl.textContent = '';
-      if(missCountEl) missCountEl.textContent = '';
-    }
-  }
-}
 
-      // Scheduled timers
+      // --- Scheduled timers ---
       if(b.scheduled){
         let next = null;
         b.scheduled.schedule.split(',').forEach(s=>{
-          const [day, time] = s.trim().split(' ');
+          const [day,time] = s.trim().split(' ');
           const occ = getNextOccurrence(day, time);
           if(!next || occ < next) next = occ;
         });
@@ -541,27 +541,48 @@ if(b.manual){
         }
       }
 
-      // Update clock display for manual when remaining resolved
+      // --- Update clock display & auto-restart ---
       if(remaining !== null && clockEl){
         clockEl.textContent = secondsToHMS(remaining);
-        if(remaining <= 0) {
+
+        if(remaining <= 0){
           card.classList.add('expired');
           card.classList.remove('timer-running','timer-today');
+
+          // Auto-restart logic
+          if(b.manual && !startTimes['auto_'+b.manual.id]){
+            const missCount = (missesCache[b.manual.id]?.missCount || 0) + 1;
+            const baseMs = b.manual.hours * 3600 * 1000;
+            const penaltyMs = (b.manual.missPenalty || 0) * 60000;
+            const nextStart = Date.now();
+
+            // Update Firebase
+            db.ref('timers/'+b.manual.id).set({ startedAt: nextStart, user: 'AUTO', guild: '' }).catch(()=>{});
+            db.ref('timerLogs/'+b.manual.id).push({ startedAt: nextStart, user: 'AUTO', guild: '', autoRestart: true }).catch(()=>{});
+            db.ref('misses/'+b.manual.id).set({
+              missCount: missCount,
+              missPenalty: b.manual.missPenalty || 0,
+              nextMissTime: nextStart + baseMs + penaltyMs
+            }).catch(()=>{});
+
+            startTimes['auto_'+b.manual.id] = true; // prevent duplicate auto-restart
+            sendVisitorDiscord(`🔄 **${b.label}** auto-restarted (miss #${missCount})`);
+          }
+
         } else {
-          // determine if same-day
+          // Determine if same-day
           let isSameDay = false;
           if(b.manual && startTimes[b.manual.id] && startTimes[b.manual.id].startedAt){
             const endDate = new Date(startTimes[b.manual.id].startedAt + b.manual.hours*3600*1000);
             isSameDay = new Date().toDateString() === endDate.toDateString();
           } else if(b.scheduled){
-            // pick soonest scheduled next and check same day
-            let next = null;
+            let nextOcc = null;
             b.scheduled.schedule.split(',').forEach(s=>{
               const [day,time] = s.trim().split(' ');
               const occ = getNextOccurrence(day,time);
-              if(!next || occ < next) next = occ;
+              if(!nextOcc || occ < nextOcc) nextOcc = occ;
             });
-            if(next) isSameDay = new Date().toDateString() === new Date(next).toDateString();
+            if(nextOcc) isSameDay = new Date().toDateString() === new Date(nextOcc).toDateString();
           }
           if(isSameDay){
             card.classList.add('timer-today');
@@ -571,9 +592,11 @@ if(b.manual){
             card.classList.remove('expired','timer-today');
           }
         }
+
       } else if(clockEl){
         clockEl.textContent = '--:--:--';
       }
+
     });
   });
 
