@@ -166,28 +166,20 @@ function mergeTimers(){
 }
 
 /* ---------- Create card markup ---------- */
-function createBossCard(b, isManual = true){
+function createBossCard(b, isManual = true) {
   const card = document.createElement('div');
-  card.className = 'card glass-card';   // existing classes
-  card.classList.add('timer-card');     // add the new professional card style
-  card.dataset.label = b.label;
+  card.classList.add("timer-card", "glass-card"); // professional style
 
-  const manualHours = b.manual ? b.manual.hours : null;
-  const schedules = b.scheduled ? b.scheduled.schedule.split(',').map(s=>s.trim()) : [];
-  const schedHtml = schedules.length ? `<div class="small">Schedule: ${schedules.join(', ')}</div>` : '';
+  const manualHours = b.manual?.hours ?? null;
+  const schedules = b.scheduled?.schedule?.split(',').map(s => s.trim()) ?? [];
+  const schedHtml = schedules.length ? `<div class="timer-subtext">Schedule: ${schedules.join(', ')}</div>` : '';
 
-  const currentMiss = b.manual?.missPenalty ?? 3;
-
+  // Base inner HTML
   card.innerHTML = `
     <div class="timer-title">${b.label}</div>
     <div class="timer-clock clock">--:--:--</div>
     <div class="timer-subtext datetime"></div>
     <div class="timer-subtext small missCount"></div>
-
-    <div class="timer-miss">
-      Miss Penalty (min):
-      <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}">
-    </div>
 
     <div class="timer-actions">
       ${isManual ? `
@@ -202,72 +194,40 @@ function createBossCard(b, isManual = true){
     <div class="timer-subtext lastBy"></div>
   `;
 
-  /* ----------------------------------------------------
-     ADD MISS PENALTY INPUT (manual bosses only)
-  ---------------------------------------------------- */
-  if(isManual){
+  // --- Manual-only: Miss Penalty ---
+  if (isManual) {
     const missPenaltyDiv = document.createElement('div');
-    missPenaltyDiv.className = 'missPenaltyContainer';
-
-    // load from boss → missesCache → fallback 3
-    const currentMiss =
-      b.manual.missPenalty ??
-      (missesCache[b.manual.id]?.missPenalty ?? 3);
-
+    missPenaltyDiv.className = 'timer-miss';
+    const currentMiss = b.manual?.missPenalty ?? 3; // default 3 min
     missPenaltyDiv.innerHTML = `
-      <label>Miss Penalty (min): </label>
-      <input type="number"
-             class="missPenaltyInput"
-             min="0"
-             value="${currentMiss}"
-             data-boss-id="${b.manual.id}">
+      Miss Penalty (min):
+      <input type="number" class="missPenaltyInput" min="0" value="${currentMiss}" data-boss-id="${b.manual.id}">
     `;
-
     card.appendChild(missPenaltyDiv);
-  }
 
-  /* ----------------------------------------------------
-     BIND EVENT — MUST BE INSIDE createBossCard
-     but OUTSIDE the HTML building block
-  ---------------------------------------------------- */
-  const missInput = card.querySelector('.missPenaltyInput');
-
-  if(missInput && !missInput.dataset.bound){
-    const bossId = missInput.dataset.bossId;
-
-    // When manually updated in UI
-    missInput.addEventListener('change', () => {
-      const value = parseInt(missInput.value, 10) || 0;
-
-      // Update local object
-      b.manual.missPenalty = value;
-
-      // Save to Firebase
-      db.ref('misses/' + bossId + '/missPenalty')
-        .set(value)
-        .catch(err => console.error('Failed to update missPenalty', err));
-    });
-
-    // Live Firebase sync (updates UI automatically)
-    db.ref('misses/' + bossId + '/missPenalty')
-      .on('value', snap => {
-        const val = snap.val() ?? 3;
-        if(parseInt(missInput.value, 10) !== val){
-          missInput.value = val;
-        }
-        b.manual.missPenalty = val; // sync local
+    // Bind input to update Firebase + local state
+    const missInput = missPenaltyDiv.querySelector('.missPenaltyInput');
+    if (missInput && !missInput.dataset.bound) {
+      const bossId = missInput.dataset.bossId;
+      missInput.addEventListener('change', () => {
+        const value = parseInt(missInput.value, 10) || 0;
+        b.manual.missPenalty = value;
+        db.ref('misses/' + bossId + '/missPenalty').set(value).catch(console.error);
       });
-
-    missInput.dataset.bound = '1';
+      db.ref('misses/' + bossId + '/missPenalty').on('value', snap => {
+        const val = snap.val() ?? 3;
+        if (parseInt(missInput.value, 10) !== val) missInput.value = val;
+        b.manual.missPenalty = val;
+      });
+      missInput.dataset.bound = '1';
+    }
   }
 
-  /* ----------------------------------------------------
-     GUILD RESTRICTIONS
-  ---------------------------------------------------- */
-  if(currentUser && currentUser.guild && currentUser.guild.toLowerCase() !== 'vesperial'){
-    ['stopBtn','sendBtn'].forEach(cls=>{
-      const btn = card.querySelector('.'+cls);
-      if(btn) btn.style.display = 'none';
+  // --- Guild restrictions ---
+  if (currentUser?.guild?.toLowerCase() !== 'vesperial') {
+    ['stopBtn', 'sendBtn', 'restartBtn', 'deleteBtn'].forEach(cls => {
+      const btn = card.querySelector('.' + cls);
+      if (btn) btn.style.display = 'none';
     });
   }
 
